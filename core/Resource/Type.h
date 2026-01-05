@@ -3,10 +3,10 @@
 #include <string>
 
 enum class ResourceType {
-    SILVER,
-    GOLD,
-    crystal,
+    SILVER = 0,
+    GOLD = 1,
+    CRYSTAL = 2,
     // 货币类型添加到上面
-    WOOD,
-    STONE
+    WOOD = 10,
+    STONE = 11
 };

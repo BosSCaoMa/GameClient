@@ -2,7 +2,7 @@
 
 #include <string>
 #include <map>
-#include "player.h"
+#include "Player.h"
 /*
 所有使用类物品的基类
 */

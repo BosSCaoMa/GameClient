@@ -4,7 +4,10 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/core/item/include"
+                "${workspaceFolder}/core/item/include",
+                "${workspaceFolder}/core",
+                "${workspaceFolder}/UserInterface",
+                "${workspaceFolder}/lib"
             ],
             "defines": [
                 "_DEBUG",

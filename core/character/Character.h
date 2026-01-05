@@ -15,5 +15,6 @@ private:
     long long attack;
     long long phyDefense;
     long long magDefense;
+    int speed;
     std::vector<int> skills;
 };
