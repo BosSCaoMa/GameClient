@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 
+class MyCharacter;
 class Character;
 class Package;
 class Player {
@@ -23,4 +24,5 @@ private:
     long long combatPower; // 战力
     int combatPowerLevel; // 战力单位
     Package* package; // 玩家背包
+    MyCharacter* characterPackage; // 玩家武将背包
 };

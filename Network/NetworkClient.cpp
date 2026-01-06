@@ -1,5 +1,6 @@
 #include "NetworkClient.h"
 #include <iostream>
+#include "LogM.h"
 
 NetworkClient::NetworkClient(const std::string& host, const std::string& port)
     : m_host(host)
@@ -15,30 +16,6 @@ NetworkClient::~NetworkClient()
 {
     stopReceiveThread();
     disconnect();
-}
-
-bool NetworkClient::initializeWinSock()
-{
-    if (m_wsaInitialized) {
-        return true;
-    }
-
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "[NetworkClient] Failed to initialize WinSock." << std::endl;
-        return false;
-    }
-
-    m_wsaInitialized = true;
-    return true;
-}
-
-void NetworkClient::cleanupWinSock()
-{
-    if (m_wsaInitialized) {
-        WSACleanup();
-        m_wsaInitialized = false;
-    }
 }
 
 bool NetworkClient::connect()
@@ -59,6 +36,7 @@ bool NetworkClient::connect()
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
+    // getaddrinfo: 将主机名和服务名转换为套接字地址结构，参数: (主机名, 端口号, 提示信息, 结果链表)
     addrinfo* serverInfo = nullptr;
     if (getaddrinfo(m_host.c_str(), m_port.c_str(), &hints, &serverInfo) != 0) {
         std::cerr << "[NetworkClient] Unable to resolve server address." << std::endl;
@@ -76,6 +54,7 @@ bool NetworkClient::connect()
     }
 
     // 4. 连接到服务器
+    // connect: 向服务器发起连接(TCP 三次握手)，参数: (套接字, 服务器地址结构, 地址结构长度)
     if (::connect(m_socket, serverInfo->ai_addr, static_cast<int>(serverInfo->ai_addrlen)) == SOCKET_ERROR) {
         std::cerr << "[NetworkClient] Unable to connect to server. Error: " << WSAGetLastError() << std::endl;
         closesocket(m_socket);
@@ -85,10 +64,39 @@ bool NetworkClient::connect()
         return false;
     }
 
-    freeaddrinfo(serverInfo);
+    freeaddrinfo(serverInfo); // 必须释放 getaddrinfo 分配的内存
     m_connected = true;
     std::cout << "[NetworkClient] Connected to " << m_host << ":" << m_port << std::endl;
     return true;
+}
+
+bool NetworkClient::initializeWinSock()
+{
+    if (m_wsaInitialized) {
+        return true;
+    }
+    /*
+     *  WSAStartup: Windows 上使用网络功能前必须调用
+     *  MAKEWORD(2, 2): 请求 WinSock 2.2 版本
+     *  wsaData: 用于接收 WinSock 实现的详细信息
+    */
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        std::cerr << "[NetworkClient] Failed to initialize WinSock." << std::endl;
+        return false;
+    }
+
+    m_wsaInitialized = true;
+    return true;
+}
+
+void NetworkClient::cleanupWinSock()
+{
+    if (m_wsaInitialized) {
+        // WSACleanup: 清理 WinSock 库，释放资源。必须与 WSAStartup 配对使用
+        WSACleanup();
+        m_wsaInitialized = false;
+    }
 }
 
 void NetworkClient::disconnect()
@@ -114,8 +122,13 @@ bool NetworkClient::send(const char* data, size_t length)
         return false;
     }
 
+    // 循环发送，确保所有数据都发送完毕
+    // 原因: send 可能只发送部分数据(例如发送缓冲区满了)
     size_t totalSent = 0;
     while (totalSent < length) {
+        // send: 通过套接字发送数据
+        // 参数: (套接字, 数据指针, 数据长度, 标志位)
+        // 返回: 实际发送的字节数，或 SOCKET_ERROR
         int bytesSent = ::send(m_socket, 
                                data + totalSent, 
                                static_cast<int>(length - totalSent), 
@@ -126,7 +139,7 @@ bool NetworkClient::send(const char* data, size_t length)
             return false;
         }
         
-        totalSent += bytesSent;
+        totalSent += bytesSent; // 累加已发送字节数
     }
 
     std::cout << "[NetworkClient] Sent " << totalSent << " bytes." << std::endl;
@@ -146,6 +159,7 @@ void NetworkClient::startReceiveThread()
     }
 
     m_receiveRunning = true;
+    // 启动独立线程执行 receiveThreadFunc
     m_receiveThread = std::thread(&NetworkClient::receiveThreadFunc, this);
     std::cout << "[NetworkClient] Receive thread started." << std::endl;
 }
@@ -171,26 +185,27 @@ void NetworkClient::receiveThreadFunc()
     char buffer[4096];
     
     while (m_receiveRunning && m_connected) {
+        // recv: 从套接字接收数据
+        // 参数: (套接字, 缓冲区指针, 缓冲区大小, 标志位)
+        // 返回值:
+        //   > 0: 实际接收的字节数
+        //   = 0: 对端关闭了连接
+        //   = SOCKET_ERROR: 发生错误
+        // 默认是**阻塞模式**: 如果没有数据，会一直等待
         int bytesReceived = recv(m_socket, buffer, sizeof(buffer), 0);
-        
         if (bytesReceived > 0) {
             std::string message(buffer, bytesReceived);
-            
             // 加锁将消息放入队列
             {
                 std::lock_guard<std::mutex> lock(m_queueMutex);
                 m_messageQueue.push(message);
             }
-            
-            std::cout << "[NetworkClient] Received " << bytesReceived 
-                      << " bytes. Queue size: " << getMessageCount() << std::endl;
-        } 
-        else if (bytesReceived == 0) {
-            std::cout << "[NetworkClient] Connection closed by server." << std::endl;
+            LOG_DEBUG("[NetworkClient] Received %d bytes. Queue size: %d", bytesReceived, getMessageCount());
+        } else if (bytesReceived == 0) {
+            LOG_INFO("[NetworkClient] Connection closed by server.");
             m_connected = false;
             break;
-        }
-        else {
+        } else {
             int error = WSAGetLastError();
             if (error != WSAEWOULDBLOCK) { // 忽略非阻塞模式的"无数据"错误
                 std::cerr << "[NetworkClient] Receive error: " << error << std::endl;
