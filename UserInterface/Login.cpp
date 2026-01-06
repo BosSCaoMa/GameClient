@@ -12,3 +12,8 @@ bool SendLoginRequest(const std::string &username, const std::string &password)
     //SendToServer(loginRequest.dump()); // JSON 对象 → 字符串
     return false;
 }
+
+bool SendRegisterRequest(const std::string &username, const std::string &password)
+{
+    return false;
+}
