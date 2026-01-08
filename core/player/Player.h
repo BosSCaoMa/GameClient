@@ -3,7 +3,6 @@
 #include <string>
 #include <map>
 
-class MyCharacter;
 class Character;
 class Package;
 class Player {
@@ -11,8 +10,8 @@ public:
     void modifyAttribute(int attrType, int value) {
         // 修改玩家属性的实现
     }
+    bool SaveDataToServer();
 
-private:
     int id;
     std::string name;
     int level;
@@ -24,5 +23,6 @@ private:
     long long combatPower; // 战力
     int combatPowerLevel; // 战力单位
     Package* package; // 玩家背包
-    MyCharacter* characterPackage; // 玩家武将背包
-};
+    std::map<int, Character> characters; // 玩家拥有的武将列表，ID -> 武将对象
+    std::vector<int> characterOrder; // 上阵武将
+}; 
