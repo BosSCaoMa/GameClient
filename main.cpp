@@ -4,7 +4,6 @@
 #include <string>
 #include <thread>
 
-#include "GameManager.h"
 #include "NetworkClient.h"
 #include "LogM.h"
 
@@ -19,7 +18,6 @@ class ClientApplication {
 public:
     ClientApplication()
         : m_client(kDefaultHost, kDefaultPort)
-        , m_gameManager(GameManager::getInstance())
         , m_running(false)
         , m_messageThreadRunning(false)
     {
@@ -120,7 +118,6 @@ private:
     }
 
     NetworkClient m_client;
-    GameManager& m_gameManager;
     bool m_running;
     
     // 消息处理线程
