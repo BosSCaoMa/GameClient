@@ -23,7 +23,7 @@ public:
 
 public:
     // ==================== 构造与析构 ====================
-    BattleManager(Player* user, Player* enemy);
+    BattleManager(Player* user, Player* enemy, LogCallback logCallback = nullptr);
     ~BattleManager() = default;
 
     // 禁止拷贝
@@ -93,6 +93,8 @@ private:
     int countAlive(const std::vector<BattleCharacter>& team) const;
     
     // ==================== 工具函数 ====================
+    
+    void log(const std::string& message);
     std::string getEffectName(EffectType type) const;
     bool rollChance(int percent);
 
@@ -117,4 +119,6 @@ private:
     
     // 随机数生成器
     std::mt19937 rng_;
+    LogCallback logCallback_;
+    void setLogCallback(LogCallback callback);
 };

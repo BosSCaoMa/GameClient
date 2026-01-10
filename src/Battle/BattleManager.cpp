@@ -3,20 +3,32 @@
 #include <algorithm>
 #include <cmath>
 #include "LogM.h"
+#include <iostream>
 // ==================== 构造函数 ====================
-BattleManager::BattleManager(Player* user, Player* enemy)
+BattleManager::BattleManager(Player* user, Player* enemy, LogCallback logCallback)
     : userPlayer_(user)
     , enemyPlayer_(enemy)
     , round_(0)
     , maxRounds_(50)
     , result_(Result::ONGOING)
+    , logCallback_(logCallback)
 {
+    LOG_DEBUG("BattleManager initialized, user: %d, enemy: %d", userPlayer_->id, enemyPlayer_->id);
+    if (!logCallback_) {
+        setLogCallback([](const std::string& msg) {
+            std::cout << msg << std::endl;
+        });
+    }
     rng_.seed(std::random_device{}());
     initBattle();
 }
 
 // ==================== 公共接口.runBattle开始战斗 ====================
-BattleManager::Result BattleManager::runBattle() {
+BattleManager::Result BattleManager::runBattle()
+{
+    // 触发开局技能
+    triggerSkills(SkillTrigger::BATTLE_START);
+
     while (result_ == Result::ONGOING) {
         executeRound();
     }
@@ -25,19 +37,22 @@ BattleManager::Result BattleManager::runBattle() {
         case Result::WIN:  LOG_INFO("=== 战斗胜利！ ==="); break;
         case Result::LOSE: LOG_INFO("=== 战斗失败！ ==="); break;
         case Result::DRAW: LOG_INFO("=== 战斗平局！ ==="); break;
-        default: break;
+        default:
+            LOG_ERROR("Unexpected battle result");
+            break;
     }
     
     return result_;
 }
 
-BattleManager::Result BattleManager::executeRound() {
+BattleManager::Result BattleManager::executeRound()
+{
     if (result_ != Result::ONGOING) {
         return result_;
     }
     
     round_++;
-    LOG_INFO("\n===== 第 %d 回合 =====", round_);
+    LOG_INFO("===== 第 %d 回合 =====", round_);
     
     // 1. 回合开始阶段
     onRoundStart();
@@ -59,7 +74,7 @@ BattleManager::Result BattleManager::executeRound() {
         }
     }
     
-    // 4. 回合结束阶段
+    // 4. 回合结束阶段，处理buff等
     onRoundEnd();
     
     // 5. 检查战斗结果
@@ -103,10 +118,7 @@ void BattleManager::initBattle() {
     
     createBattleCharacters();
     
-    LOG_INFO("=== 战斗开始 ===");
-    
-    // 触发开局技能
-    triggerSkills(SkillTrigger::BATTLE_START);
+    log("战斗开始");
 }
 
 void BattleManager::createBattleCharacters() {
@@ -147,7 +159,8 @@ void BattleManager::createBattleCharacters() {
 }
 
 // ==================== 回合流程 ====================
-void BattleManager::onRoundStart() {
+void BattleManager::onRoundStart()
+{
     // 重置行动标记
     for (auto& ch : userTeam_) {
         ch.hasActed = false;
@@ -206,12 +219,13 @@ void BattleManager::calculateActionOrder() {
 }
 
 // ==================== 行动执行 ====================
-void BattleManager::executeAction(BattleCharacter* actor) {
+void BattleManager::executeAction(BattleCharacter* actor)
+{
     actor->hasActed = true;
     
     // 被控制无法行动
     if (actor->isControlled()) {
-        LOG_INFO("%s 被控制，无法行动！", actor->name.c_str());
+        log(actor->name + " 被控制，无法行动！");
         return;
     }
     
@@ -219,14 +233,14 @@ void BattleManager::executeAction(BattleCharacter* actor) {
     Skill* skill = actor->getRageSkill();
     if (skill) {
         actor->currentAttr.rage -= 4;
-        LOG_INFO("%s 释放 [%s]", actor->name.c_str(), skill->name.c_str());
+        log(actor->name + " 释放 [" + skill->name + "]！");
     } else {  // 怒气不足或者无怒气技能
         skill = actor->getNormalAttack();
         if (!skill) {
             LOG_ERROR("错误：%s 无法进行普通攻击！", actor->name.c_str());
             return;
         }
-        LOG_INFO("%s 进行普通攻击", actor->name.c_str());
+        log(actor->name + " 进行普通攻击");
     }
     
     executeSkill(actor, skill);
@@ -246,8 +260,8 @@ void BattleManager::executeSkill(BattleCharacter* caster, Skill* skill)
     }
 }
 
-void BattleManager::executeEffect(BattleCharacter* caster, const SkillEffect& effect, 
-                                   int skillId) {
+void BattleManager::executeEffect(BattleCharacter* caster, const SkillEffect& effect, int skillId)
+{
     // 概率判定
     if (effect.chance < 100 && !rollChance(effect.chance)) {
         return;
@@ -255,7 +269,6 @@ void BattleManager::executeEffect(BattleCharacter* caster, const SkillEffect& ef
     
     // 获取目标
     std::vector<BattleCharacter*> targets = getTargets(caster, effect.target);
-    
     if (targets.empty()) {
         return;
     }
@@ -269,14 +282,15 @@ void BattleManager::executeEffect(BattleCharacter* caster, const SkillEffect& ef
 }
 
 void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target,
-                                 const SkillEffect& effect, int skillId) {
+    const SkillEffect& effect, int skillId)
+{
     switch (effect.effect) {
         // ===== 即时伤害 =====
         case EffectType::DAMAGE: {
             int64_t damage = calculateDamage(caster, target, effect);
             target->takeDamage(damage);
-            LOG_INFO("  - %s 受到 %lld 点伤害 (剩余HP: %lld)", target->name.c_str(), damage, target->currentAttr.hp);
-            // todo: 触发受击技能
+            log("  - " + target->name + " 受到 " + std::to_string(damage) + " 点伤害 (剩余HP: " + std::to_string(target->currentAttr.hp) + ")");
+            triggerOnHit(target, caster);
             break;
         }
         
@@ -284,6 +298,8 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::HEAL: {
             int64_t heal = calculateHeal(caster, target, effect);
             target->heal(heal);
+            log("  - " + target->name + " 恢复 " + std::to_string(heal) + " 点生命" +
+                " (当前HP: " + std::to_string(target->currentAttr.hp) + ")");
             break;
         }
         
@@ -291,12 +307,14 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::RAGE_ADD: {
             int amount = static_cast<int>(effect.value);
             target->addRage(amount);
+            log("  - " + target->name + " 获得 " + std::to_string(amount) + " 点怒气");
             break;
         }
         
         case EffectType::RAGE_REDUCE: {
             int amount = static_cast<int>(effect.value);
             target->addRage(-amount);
+            log("  - " + target->name + " 减少 " + std::to_string(amount) + " 点怒气");
             break;
         }
         
@@ -359,7 +377,8 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
 }
 
 // ==================== 数值计算 ====================
-int64_t BattleManager::calculateValue(BattleCharacter* caster, const SkillEffect& effect) {
+int64_t BattleManager::calculateValue(BattleCharacter* caster, const SkillEffect& effect)
+{
     int64_t baseValue = effect.value;
     
     switch (effect.valueType) {
@@ -687,7 +706,8 @@ void BattleManager::triggerSkills(SkillTrigger trigger) {
     }
 }
 
-void BattleManager::triggerOnHit(BattleCharacter* defender, BattleCharacter* attacker) {
+void BattleManager::triggerOnHit(BattleCharacter* defender, BattleCharacter* attacker)
+{
     if (!defender || !defender->isAlive) {
         return;
     }
@@ -720,7 +740,8 @@ void BattleManager::triggerOnLowHp(BattleCharacter* character) {
     }
 }
 
-void BattleManager::triggerOnDeath(BattleCharacter* character) {
+void BattleManager::triggerOnDeath(BattleCharacter* character)
+{
     if (!character) {
         return;
     }
@@ -829,3 +850,7 @@ bool BattleManager::rollChance(int percent) {
     return dist(rng_) <= percent;
 }
 
+void BattleManager::setLogCallback(LogCallback callback)
+{
+    logCallback_ = callback;
+}

@@ -86,7 +86,9 @@ enum class EffectType {
     IMMUNITY,           // 免疫
     TAUNT,              // 嘲讽
     REVIVE,             // 复活
-    INJURY              // 重伤（限制回血）
+    INJURY,              // 重伤（限制回血）
+
+    ALL
 };
 
 const std::unordered_set<EffectType> debuffTypes = {

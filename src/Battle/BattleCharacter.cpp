@@ -117,7 +117,8 @@ bool BattleCharacter::isSilenced() const {
 }
 
 // ==================== 战斗操作 ====================
-void BattleCharacter::takeDamage(int64_t damage, bool canBeShielded = true) {
+void BattleCharacter::takeDamage(int64_t damage, bool canBeShielded = true)
+{
     if (canBeShielded && shieldValue > 0) {
         if (shieldValue >= damage) {
             shieldValue -= damage;

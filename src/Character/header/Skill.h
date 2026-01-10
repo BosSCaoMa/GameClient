@@ -19,7 +19,7 @@ struct SkillEffect {
         : target(t), effect(e), valueType(vt), value(v), 
           duration(dur), chance(ch) {}
     
-    // 便捷构造:todo补充
+    // 便捷构造:(目前已经完全)
     static SkillEffect Damage(TargetType t, int64_t atkPercent) {
         return {t, EffectType::DAMAGE, ValueType::PERCENT_ATK, atkPercent};
     }

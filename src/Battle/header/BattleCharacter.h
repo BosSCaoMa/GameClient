@@ -32,7 +32,7 @@ public:
     
     void tickBuffs();
     
-    void recalculateAttr();
+    void recalculateAttr(); // EffectType changedBuff = EffectType::ALL
     
     // ==================== 状态检查 ====================
     bool isControlled() const;
