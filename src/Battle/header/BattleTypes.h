@@ -46,49 +46,62 @@ enum class TargetType {
 
 // ==================== 数值计算类型 ====================
 enum class ValueType {
-    FIXED,                  // 固定值(<100为目标百分比)
-    PERCENT_ATK,            // 攻击力百分比 
-    PERCENT_DEF,            // 防御力百分比
-    PERCENT_MAX_HP,         // 最大生命百分比
-    PERCENT_CURRENT_HP,     // 当前生命百分比
-    PERCENT_LOST_HP,        // 已损失生命百分比
+    FIXED = 0,          // 固定值
+    PERCENT,            // 百分比（通用）
+    PERCENT_ATK,        // 攻击力百分比
+    PERCENT_DEF,        // 防御力百分比
+    PERCENT_MAX_HP,     // 最大生命值百分比
+    PERCENT_CUR_HP,     // 当前生命值百分比
+    PERCENT_LOST_HP,    // 已损失生命值百分比
+    PERCENT_TARGET_HP,  // 目标最大生命值百分比
 };
 
 // ==================== 效果类型 ====================
 enum class EffectType {
-    // 即时效果
-    DAMAGE,             // 造成伤害
+    NONE = 0,
+    
+    // 伤害/治疗
+    DAMAGE,             // 伤害
     HEAL,               // 治疗
+    
+    // 怒气
     RAGE_ADD,           // 增加怒气
     RAGE_REDUCE,        // 减少怒气
     
-    // 持续Buff效果
-    BUFF_ATK,           // 攻击力变化
-    BUFF_DEF,           // 防御力变化
-    BUFF_SPEED,         // 速度变化
-    BUFF_CRIT_RATE,     // 暴击率变化
-    BUFF_CRIT_RESIST,   // 抗暴率变化
-    BUFF_HIT_RATE,      // 命中率变化
-    BUFF_DODGE_RATE,    // 闪避率变化
-
-    // 控制效果
-    STUN,               // 眩晕
-    SILENCE,            // 沉默
-    FREEZE,             // 冰冻
+    // 属性Buff
+    BUFF_ATK,           // 攻击力加成
+    BUFF_DEF,           // 防御力加成
+    BUFF_SPEED,         // 速度加成
+    BUFF_CRIT_RATE,     // 暴击率加成
+    BUFF_CRIT_RESIST,    // 抗暴率
+    BUFF_HIT_RATE,      // 命中率加成
+    BUFF_DODGE_RATE,    // 闪避率加成
     
-    // 持续伤害
+    // 控制
+    STUN,               // 眩晕（无法行动）
+    SILENCE,            // 沉默（无法释放技能，只能普攻）
+    FREEZE,             // 冰冻（无法行动，受到伤害解除）
+    TAUNT,              // 嘲讽（强制攻击释放者）
+    INJURY,             // 受伤（降低治疗效果）
+    
+    // DOT（持续伤害）
     POISON,             // 中毒
     BURN,               // 灼烧
     BLEED,              // 流血
     
-    // 特殊效果
+    // 护盾
     SHIELD,             // 护盾
-    IMMUNITY,           // 免疫
-    TAUNT,              // 嘲讽
+    
+    // 特殊
     REVIVE,             // 复活
-    INJURY,              // 重伤（限制回血）
-
-    ALL
+    DISPEL,             // 驱散（移除敌方Buff）
+    CLEANSE,            // 净化（移除己方Debuff）
+    IMMUNITY,           // 免疫控制
+    INVINCIBLE,         // 无敌
+    
+    // 标记类（高级机制）
+    MARK_DAMAGE,        // 伤害标记（受到伤害时额外伤害）
+    MARK_HEAL,          // 治疗标记（受到治疗时额外治疗）
 };
 
 const std::unordered_set<EffectType> debuffTypes = {

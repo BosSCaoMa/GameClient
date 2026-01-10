@@ -349,7 +349,7 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::POISON:
         case EffectType::BURN:
         case EffectType::BLEED: {
-            int64_t dotDamage = calculateValue(caster, effect);
+            int64_t dotDamage = calculateValue(caster, effect, target);
             target->addBuff(effect.effect, dotDamage, effect.duration, skillId);
             break;
         }
@@ -377,7 +377,7 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
 }
 
 // ==================== 数值计算 ====================
-int64_t BattleManager::calculateValue(BattleCharacter* caster, const SkillEffect& effect)
+int64_t BattleManager::calculateValue(BattleCharacter* caster, const SkillEffect& effect, BattleCharacter* target)
 {
     int64_t baseValue = effect.value;
     
@@ -394,14 +394,17 @@ int64_t BattleManager::calculateValue(BattleCharacter* caster, const SkillEffect
         case ValueType::PERCENT_MAX_HP:
             return caster->currentAttr.maxHp * baseValue / 100;
             
-        case ValueType::PERCENT_CURRENT_HP:
+        case ValueType::PERCENT_CUR_HP:
             return caster->currentAttr.hp * baseValue / 100;
             
         case ValueType::PERCENT_LOST_HP: {
             int64_t lostHp = caster->currentAttr.maxHp - caster->currentAttr.hp;
             return lostHp * baseValue / 100;
         }
-        
+        case ValueType::PERCENT_TARGET_HP:
+            return target->currentAttr.maxHp * baseValue / 100;
+        case ValueType::PERCENT:
+            return baseValue; // 通用百分比，直接返回数值，调用处自行处理
         default:
             return baseValue;
     }
@@ -418,7 +421,7 @@ int64_t BattleManager::calculateDamage(BattleCharacter* caster, BattleCharacter*
     }
 
     // 2. 基础伤害
-    int64_t baseDamage = calculateValue(caster, effect);
+    int64_t baseDamage = calculateValue(caster, effect, target);
     
     // 3. 暴击判定
     bool isCrit = false;
@@ -445,7 +448,8 @@ int64_t BattleManager::calculateDamage(BattleCharacter* caster, BattleCharacter*
 }
 
 int64_t BattleManager::calculateHeal(BattleCharacter* caster, BattleCharacter* target,
-                                      const SkillEffect& effect) {
+     const SkillEffect& effect)
+{
     int64_t heal = calculateValue(caster, effect);
     return std::max(static_cast<int64_t>(0), heal);
 }
@@ -827,7 +831,7 @@ std::string BattleManager::getEffectName(EffectType type) const {
         case EffectType::BUFF_DEF:      return "防御力";
         case EffectType::BUFF_SPEED:    return "速度";
         case EffectType::BUFF_CRIT_RATE: return "暴击率";
-        case EffectType::BUFF_CRIT_RESIST: return "暴击伤害";
+        case EffectType::BUFF_CRIT_RESIST: return "抗暴率";
         // 补充于此
         case EffectType::STUN:          return "眩晕";
         case EffectType::SILENCE:       return "沉默";

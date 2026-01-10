@@ -65,7 +65,8 @@ private:
                      const SkillEffect& effect, int skillId);
     
     // ==================== 伤害计算 ====================
-    int64_t calculateValue(BattleCharacter* caster, const SkillEffect& effect);
+    int64_t calculateValue(BattleCharacter* caster, const SkillEffect& effect, 
+                           BattleCharacter* target = nullptr);
     int64_t calculateDamage(BattleCharacter* caster, BattleCharacter* target, 
                             const SkillEffect& effect);
     int64_t calculateHeal(BattleCharacter* caster, BattleCharacter* target,
