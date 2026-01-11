@@ -1,64 +1,253 @@
 #include "Player.h"
-#include "Character.h"  // 必须包含，因为要访问 Character 的 baseAttr 成员
+#include "ItemConfig.h"
+#include <algorithm>
 
-// 构造函数实现
-Player::Player() {}
-
-// 修改属性值
-void Player::modifyAttribute(PlayerAttrType type, int value) {
-    attributes[type] += value;
+// ==================== Package 实现 ====================
+bool Package::addItem(int itemId, int count)
+{
+    // 查找是否已有该物品
+    auto it = itemsMap.find(itemId);
+    if (it != itemsMap.end()) {
+        ItemSlot& slot = it->second;
+        const auto* tmpl = ItemConfig::instance().getItem(itemId);
+        if (!tmpl) return false;
+        
+        // 检查堆叠上限
+        if (slot.count + count <= tmpl->maxStack) {
+            slot.count += count;
+            return true;
+        } else {
+            return false; // 超过堆叠上限
+        }
+    }
+    
+    // 新增物品槽
+    if (itemsMap.size() >= maxItemSlots) {
+        return false;  // 背包已满
+    }
+    
+    itemsMap[itemId] = ItemSlot(itemId, count);
+    return true;
 }
 
-// 获取属性值（const 函数保持 const 修饰）
-int Player::getAttribute(PlayerAttrType type) const {
+bool Package::removeItem(int itemId, int count)
+{
+    auto it = itemsMap.find(itemId);
+    if (it == itemsMap.end()) {
+        return false;
+    }
+    ItemSlot& slot = it->second;
+    if (slot.count < count) {
+        return false;
+    }
+    slot.count -= count;
+    if (slot.count == 0) {
+        itemsMap.erase(it);
+    }
+    return true;
+}
+
+int Package::getItemCount(int itemId) const
+{
+    auto it = itemsMap.find(itemId);
+    if (it != itemsMap.end()) {
+        return it->second.count;
+    }
+    return 0;
+}
+
+bool Package::addEquipment(const Equipment& equip)
+{
+    if (equipments.size() >= maxEquipSlots) {
+        return false;
+    }
+    equipments.push_back(equip);
+    return true;
+}
+
+// 上装备或出售进行移除
+bool Package::removeEquipment(int index)
+{
+    if (index < 0 || index >= equipments.size()) {
+        return false;
+    }
+    equipments.erase(equipments.begin() + index);
+    return true;
+}
+
+const Equipment* Package::getEquipment(int index) const
+{
+    if (index < 0 || index >= equipments.size()) {
+        return nullptr;
+    }
+    return &equipments[index];
+}
+
+// ==================== Player 实现 ====================
+Player::Player() : id(0), level(1), vipLevel(0), combatPower(0) {}
+
+Player::Player(int id_, const std::string& name_) 
+    : id(id_), name(name_), level(1), vipLevel(0), combatPower(0) {}
+
+// ==================== 属性管理 ====================
+void Player::modifyAttribute(PlayerAttrType type, int value)
+{
+    attributes[type] += value;
+    
+    // 防止负数
+    if (attributes[type] < 0) {
+        attributes[type] = 0;
+    }
+}
+
+int Player::getAttribute(PlayerAttrType type) const
+{
     auto it = attributes.find(type);
     return it != attributes.end() ? it->second : 0;
 }
 
-// 更新总战力
-void Player::updateCombatPower() {
-    combatPower = 0;
-    if (character) {
-        combatPower += calculateCharacterPower(character);
-    }
-    for (int id : characterOrder) {
-        auto it = characters.find(id);
-        if (it != characters.end()) {
-            combatPower += calculateCharacterPower(&it->second);
-        }
-    }
+// ==================== 资源管理 ====================
+void Player::addResource(int resourceId, int64_t amount) {
+    resources[resourceId] += amount;
 }
 
-// 存档到服务器（TODO 待实现）
-bool Player::saveDataToServer() {
-    // TODO: 实现存档逻辑
+bool Player::costResource(int resourceId, int64_t amount) {
+    int64_t current = getResource(resourceId);
+    if (current < amount) {
+        return false;
+    }
+    resources[resourceId] -= amount;
     return true;
 }
 
-// 计算单个角色的战力（私有函数）
-uint64_t Player::calculateCharacterPower(Character* ch) {
-    const BattleAttr& attr = ch->baseAttr;
-    // 简单战力公式
-    return static_cast<uint64_t>(
-        attr.maxHp / 10 + 
-        attr.atk * 5 + 
-        attr.defence * 3 + 
-        attr.speed * 2
-    );
+int64_t Player::getResource(int resourceId) const {
+    auto it = resources.find(resourceId);
+    return it != resources.end() ? it->second : 0;
 }
 
-// ------------战斗相关-----------------------
-// 获取上阵角色列表（包含主角）
+// ==================== 武将管理 ====================
+bool Player::addCharacter(const Character& ch) {
+    if (hasCharacter(ch.id)) {
+        return false;  // 已拥有
+    }
+    characters[ch.id] = ch;
+    updateCombatPower();
+    return true;
+}
+
+bool Player::removeCharacter(int charId) {
+    if (!hasCharacter(charId)) {
+        return false;
+    }
+    
+    // 如果在阵容中，先移除
+    removeFromBattleTeam(charId);
+    
+    characters.erase(charId);
+    updateCombatPower();
+    return true;
+}
+
+Character* Player::getCharacter(int charId) {
+    auto it = characters.find(charId);
+    return it != characters.end() ? &it->second : nullptr;
+}
+
+const Character* Player::getCharacter(int charId) const {
+    auto it = characters.find(charId);
+    return it != characters.end() ? &it->second : nullptr;
+}
+
+bool Player::hasCharacter(int charId) const {
+    return characters.find(charId) != characters.end();
+}
+
+// ==================== 阵容管理 ====================
+bool Player::addToBattleTeam(int charId) {
+    if (!hasCharacter(charId)) {
+        return false;
+    }
+    
+    if (isBattleTeamFull()) {
+        return false;
+    }
+    
+    // 检查是否已在阵容
+    auto it = std::find(battleTeam.begin(), battleTeam.end(), charId);
+    if (it != battleTeam.end()) {
+        return false;
+    }
+    
+    battleTeam.push_back(charId);
+    updateCombatPower();
+    return true;
+}
+
+bool Player::removeFromBattleTeam(int charId) {
+    auto it = std::find(battleTeam.begin(), battleTeam.end(), charId);
+    if (it == battleTeam.end()) {
+        return false;
+    }
+    
+    battleTeam.erase(it);
+    updateCombatPower();
+    return true;
+}
+
 std::vector<Character*> Player::getBattleTeam() {
     std::vector<Character*> team;
-    if (character) {
-        team.push_back(character);
-    }
-    for (int id : characterOrder) {
-        auto it = characters.find(id);
-        if (it != characters.end()) {
-            team.push_back(&it->second);
+    for (int charId : battleTeam) {
+        auto* ch = getCharacter(charId);
+        if (ch) {
+            team.push_back(ch);
         }
     }
     return team;
+}
+
+std::vector<const Character*> Player::getBattleTeam() const {
+    std::vector<const Character*> team;
+    for (int charId : battleTeam) {
+        auto* ch = getCharacter(charId);
+        if (ch) {
+            team.push_back(ch);
+        }
+    }
+    return team;
+}
+
+bool Player::isBattleTeamFull() const {
+    return battleTeam.size() >= 5;
+}
+
+// ==================== 战力计算 ====================
+void Player::updateCombatPower() {
+    combatPower = 0;
+    
+    // 计算上阵武将战力
+    for (int charId : battleTeam) {
+        const auto* ch = getCharacter(charId);
+        if (ch) {
+            combatPower += calculateCharacterPower(ch);
+        }
+    }
+}
+
+uint64_t Player::calculateCharacterPower(const Character* ch) const {
+    if (!ch) return 0;
+    return ch->calculateCombatPower();
+}
+
+// ==================== 数据持久化 ====================
+bool Player::saveDataToServer() {
+    // TODO: 实现与服务器的数据同步
+    // 序列化玩家数据并发送
+    return true;
+}
+
+bool Player::loadDataFromServer()
+{
+    // todo : 实现从服务器加载数据
+    // 反序列化玩家数据
+    return true;
 }

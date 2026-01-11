@@ -75,7 +75,7 @@ void BattleCharacter::recalculateAttr()
                 currentAttr.atk = baseAttr.atk * (100 + buff.value) / 100;
                 break;
             case EffectType::BUFF_DEF:
-                currentAttr.defence = baseAttr.defence * (100 + buff.value) / 100;
+                currentAttr.def = baseAttr.def * (100 + buff.value) / 100;
                 break;
             case EffectType::BUFF_SPEED:
                 currentAttr.speed = baseAttr.speed * (100 + static_cast<int>(buff.value)) / 100;

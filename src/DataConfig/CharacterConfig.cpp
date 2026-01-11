@@ -165,7 +165,7 @@ Character CharacterConfig::create(int charId, int level = 1, int star = 1) const
     // 计算属性：基础 + 成长 * (等级-1)
     ch.baseAttr.hp = tmpl->baseAttr.hp + tmpl->growthAttr.hp * (level - 1);
     ch.baseAttr.atk = tmpl->baseAttr.atk + tmpl->growthAttr.atk * (level - 1);
-    ch.baseAttr.defence = tmpl->baseAttr.defence + tmpl->growthAttr.defence * (level - 1);
+    ch.baseAttr.def = tmpl->baseAttr.def + tmpl->growthAttr.def * (level - 1);
     ch.baseAttr.speed = tmpl->baseAttr.speed + tmpl->growthAttr.speed * (level - 1);
     ch.baseAttr.maxHp = ch.baseAttr.hp;
     

@@ -10,7 +10,6 @@ project/
 ├── Player.h             # 玩家类
 ├── BattleManager.h      # 战斗管理器头文件
 ├── BattleManager.cpp    # 战斗管理器实现
-└── main.cpp             # 测试入口
 
 
 

@@ -389,7 +389,7 @@ int64_t BattleManager::calculateValue(BattleCharacter* caster, const SkillEffect
             return caster->currentAttr.atk * baseValue / 100;
             
         case ValueType::PERCENT_DEF:
-            return caster->currentAttr.defence * baseValue / 100;
+            return caster->currentAttr.def * baseValue / 100;
             
         case ValueType::PERCENT_MAX_HP:
             return caster->currentAttr.maxHp * baseValue / 100;
@@ -434,12 +434,12 @@ int64_t BattleManager::calculateDamage(BattleCharacter* caster, BattleCharacter*
     }
     
     // 4. 防御减伤: 实际伤害 = 基础伤害 * 200 / (200 + 防御)
-    int64_t defense = std::max(static_cast<int64_t>(0), target->currentAttr.defence);
+    int64_t defense = std::max(static_cast<int64_t>(0), target->currentAttr.def);
     int64_t damage = baseDamage - defense;
     
     // 5. 伤害加成/减免
     damage = damage * (100 + caster->currentAttr.damageBonus) / 100;
-    damage = damage * (100 - target->currentAttr.damageReduce) / 100;
+    damage = damage * (100 - target->currentAttr.damageReduction) / 100;
     
     // 6. 保底伤害
     damage = std::max(static_cast<int64_t>(1), damage);
