@@ -1,5 +1,53 @@
 #include "ItemConfig.h"
 #include <random>
+#include "LogM.h"
+
+// ==================== 创建装备实例 ====================
+Equipment ItemConfig::createEquipment(int equipId, int level) const
+{
+    const auto* tmpl = getEquipment(equipId);
+    if (!tmpl) {
+        LOG_ERROR("Equipment template not found for id: {}", equipId);
+        return Equipment();
+    }
+    
+    Equipment equip(tmpl->id, tmpl->name, tmpl->type, tmpl->quality, level);
+    equip.setId = tmpl->setId;
+    
+    // 随机器
+    std::random_device rd;  // 随机数种子（硬件随机数）
+    std::mt19937 gen(rd());  // 梅森旋转算法随机数生成器
+    
+    // 生成主词缀
+    equip.mainAffix = {tmpl->mainAffixType, tmpl->mainAffixMin};
+    
+    // 根据品质生成副词缀
+    int subAffixCount = static_cast<int>(tmpl->quality) - 2;  // 蓝装1个, 紫装2个, 橙装3个, 红装4个
+    subAffixCount = std::min(subAffixCount, 4);
+    
+    static const AffixType possibleAffixes[] = {
+        AffixType::CRIT_RATE, AffixType::CRIT_DAMAGE, AffixType::HIT_RATE,
+        AffixType::COUNTER_RATE, AffixType::HEAL_BONUS, AffixType::MULTI_HIT_RATE,
+        AffixType::STUN_RESIST, AffixType::SILENCE_RESIST, AffixType::POISON_RESIST
+    }; // 随机词缀池,全部是百分比加成
+
+    // 生成模板指定范围内的随机数
+    int minvalue = 3, maxvalue = 5;
+    minvalue += static_cast<int>(tmpl->quality);
+    maxvalue += static_cast<int>(tmpl->quality) * 2;
+    int numPossible = sizeof(possibleAffixes) / sizeof(possibleAffixes[0]);
+    std::uniform_int_distribution<> affixDis(0, numPossible - 1); // possibleAffixes数组索引
+    std::uniform_int_distribution<> valueDis(minvalue, maxvalue); // 词缀数值范围
+    
+    for (int i = 0; i < subAffixCount; ++i) {
+        AffixType type = possibleAffixes[affixDis(gen)];
+        int64_t value = valueDis(gen);
+        equip.subAffixes.push_back({type, value});
+    }
+    
+    return equip;
+}
+
 
 void ItemConfig::init() {
     initConsumables();
@@ -16,92 +64,50 @@ void ItemConfig::initConsumables() {
     
     // ===== 生命药水 (10001-10099) =====
     {
-        ItemTemplate tmpl;
-        tmpl.id = 10001;
-        tmpl.name = "小型生命药水";
-        tmpl.type = IT::CONSUMABLE;
-        tmpl.subType = CT::HP_POTION;
-        tmpl.quality = 1;
+        ItemTemplate tmpl(10001, "小型生命药水", IT::CONSUMABLE, CT::HP_POTION, 1, 999);
         tmpl.description = "恢复500点生命值";
-        tmpl.maxStack = 99;
         tmpl.effects.push_back({ET::HEAL, 500});
         regItem(tmpl);
     }
     
     {
-        ItemTemplate tmpl;
-        tmpl.id = 10002;
-        tmpl.name = "中型生命药水";
-        tmpl.type = IT::CONSUMABLE;
-        tmpl.subType = CT::HP_POTION;
-        tmpl.quality = 2;
+        ItemTemplate tmpl(10002, "中型生命药水", IT::CONSUMABLE, CT::HP_POTION, 2, 999);
         tmpl.description = "恢复2000点生命值";
-        tmpl.maxStack = 99;
         tmpl.effects.push_back({ET::HEAL, 2000});
         regItem(tmpl);
     }
     
     {
-        ItemTemplate tmpl;
-        tmpl.id = 10003;
-        tmpl.name = "大型生命药水";
-        tmpl.type = IT::CONSUMABLE;
-        tmpl.subType = CT::HP_POTION;
-        tmpl.quality = 3;
+        ItemTemplate tmpl(10003, "大型生命药水", IT::CONSUMABLE, CT::HP_POTION, 3, 999);
         tmpl.description = "恢复5000点生命值";
-        tmpl.maxStack = 99;
         tmpl.effects.push_back({ET::HEAL, 5000});
         regItem(tmpl);
     }
     
     // ===== 怒气药水 (10101-10199) =====
     {
-        ItemTemplate tmpl;
-        tmpl.id = 10101;
-        tmpl.name = "怒气精华";
-        tmpl.type = IT::CONSUMABLE;
-        tmpl.subType = CT::RAGE_POTION;
-        tmpl.quality = 2;
-        tmpl.description = "立即获得50点怒气";
-        tmpl.maxStack = 99;
-        tmpl.effects.push_back({ET::RAGE_ADD, 50});
+        ItemTemplate tmpl(10101, "怒气精华", IT::CONSUMABLE, CT::RAGE_POTION, 2, 999);
+        tmpl.description = "立即获得2点怒气";
+        tmpl.effects.push_back({ET::RAGE_ADD, 2});
         regItem(tmpl);
     }
     
     // ===== 经验药水 (10201-10299) =====
     {
-        ItemTemplate tmpl;
-        tmpl.id = 10201;
-        tmpl.name = "经验丹（小）";
-        tmpl.type = IT::CONSUMABLE;
-        tmpl.subType = CT::EXP_POTION;
-        tmpl.quality = 1;
+        ItemTemplate tmpl(10201, "经验丹（小）", IT::CONSUMABLE, CT::EXP_POTION, 1, 999);
         tmpl.description = "获得1000点经验";
-        tmpl.maxStack = 999;
         regItem(tmpl);
     }
     
     {
-        ItemTemplate tmpl;
-        tmpl.id = 10202;
-        tmpl.name = "经验丹（中）";
-        tmpl.type = IT::CONSUMABLE;
-        tmpl.subType = CT::EXP_POTION;
-        tmpl.quality = 2;
+        ItemTemplate tmpl(10202, "经验丹（中）", IT::CONSUMABLE, CT::EXP_POTION, 2, 999);
         tmpl.description = "获得5000点经验";
-        tmpl.maxStack = 999;
         regItem(tmpl);
     }
     
     {
-        ItemTemplate tmpl;
-        tmpl.id = 10203;
-        tmpl.name = "经验丹（大）";
-        tmpl.type = IT::CONSUMABLE;
-        tmpl.subType = CT::EXP_POTION;
-        tmpl.quality = 3;
+        ItemTemplate tmpl(10203, "经验丹（大）", IT::CONSUMABLE, CT::EXP_POTION, 3, 999);
         tmpl.description = "获得20000点经验";
-        tmpl.maxStack = 999;
         regItem(tmpl);
     }
 }
@@ -112,33 +118,20 @@ void ItemConfig::initMaterials() {
     
     // ===== 强化材料 (11001-11099) =====
     {
-        ItemTemplate tmpl;
-        tmpl.id = 11001;
-        tmpl.name = "铁矿石";
-        tmpl.type = IT::MATERIAL;
-        tmpl.quality = 1;
+        ItemTemplate tmpl(11001, "铁矿石", IT::MATERIAL, ConsumableType::NONE, 1, 999);
         tmpl.description = "用于强化装备";
-        tmpl.maxStack = 999;
         regItem(tmpl);
     }
     
     {
-        ItemTemplate tmpl;
-        tmpl.id = 11002;
-        tmpl.name = "秘银";
-        tmpl.type = IT::MATERIAL;
-        tmpl.quality = 3;
+        ItemTemplate tmpl(11002, "秘银", IT::MATERIAL, ConsumableType::NONE, 3, 999);
         tmpl.description = "稀有强化材料";
         tmpl.maxStack = 999;
         regItem(tmpl);
     }
     
     {
-        ItemTemplate tmpl;
-        tmpl.id = 11003;
-        tmpl.name = "精金";
-        tmpl.type = IT::MATERIAL;
-        tmpl.quality = 4;
+        ItemTemplate tmpl(11003, "精金", IT::MATERIAL, ConsumableType::NONE, 4, 999);
         tmpl.description = "高级强化材料";
         tmpl.maxStack = 999;
         regItem(tmpl);
@@ -146,11 +139,7 @@ void ItemConfig::initMaterials() {
     
     // ===== 进阶材料 (11101-11199) =====
     {
-        ItemTemplate tmpl;
-        tmpl.id = 11101;
-        tmpl.name = "武将碎片";
-        tmpl.type = IT::MATERIAL;
-        tmpl.quality = 2;
+        ItemTemplate tmpl(11101, "武将碎片", IT::MATERIAL, ConsumableType::NONE, 2, 999);
         tmpl.description = "用于合成或进阶武将";
         tmpl.maxStack = 999;
         regItem(tmpl);
@@ -159,19 +148,24 @@ void ItemConfig::initMaterials() {
 
 // ==================== 装备配置 ====================
 void ItemConfig::initEquipments() {
-    using ET = EquipmentType;
-    using EQ = EquipmentQuality;
-    using AT = AffixType;
-    
+
+    // 分离各类初始化函数，便于维护
+    initWeapons();
+    initArmors();
+    initHelmets();
+    initBoots();
+    initSteeds();
+    initTallys();
+    initTreasures();
+    initFamouss();
+      
+}
+
+void ItemConfig::initWeapons()
+{
     // ===== 武器 (20001-20999) =====
     {
-        EquipmentTemplate tmpl;
-        tmpl.id = 20001;
-        tmpl.name = "青铜剑";
-        tmpl.type = ET::WEAPON;
-        tmpl.quality = EQ::WHITE;
-        tmpl.level = 1;
-        tmpl.baseAttr.atk = 100;
+        EquipmentTemplate tmpl(20001, "青铜剑", ET::WEAPON, EQ::WHITE);
         tmpl.mainAffixType = AT::ATK_FLAT;
         tmpl.mainAffixMin = 20;
         tmpl.mainAffixMax = 40;
@@ -179,13 +173,7 @@ void ItemConfig::initEquipments() {
     }
     
     {
-        EquipmentTemplate tmpl;
-        tmpl.id = 20002;
-        tmpl.name = "铁剑";
-        tmpl.type = ET::WEAPON;
-        tmpl.quality = EQ::GREEN;
-        tmpl.level = 10;
-        tmpl.baseAttr.atk = 250;
+        EquipmentTemplate tmpl(20002, "铁剑", ET::WEAPON, EQ::GREEN);
         tmpl.mainAffixType = AT::ATK_FLAT;
         tmpl.mainAffixMin = 50;
         tmpl.mainAffixMax = 80;
@@ -193,31 +181,19 @@ void ItemConfig::initEquipments() {
     }
     
     {
-        EquipmentTemplate tmpl;
-        tmpl.id = 20003;
-        tmpl.name = "青龙偃月刀";
-        tmpl.type = ET::WEAPON;
-        tmpl.quality = EQ::ORANGE;
-        tmpl.level = 50;
-        tmpl.baseAttr.atk = 800;
-        tmpl.baseAttr.critRate = 5;
+        EquipmentTemplate tmpl(20003, "青龙偃月刀", ET::WEAPON, EQ::ORANGE);
         tmpl.mainAffixType = AT::ATK_PERCENT;
         tmpl.mainAffixMin = 15;
         tmpl.mainAffixMax = 25;
         tmpl.setId = 1001;  // 蜀国套装
         regEquipment(tmpl);
     }
-    
+}
+
+void ItemConfig::initArmors() {
     // ===== 盔甲 (21001-21999) =====
     {
-        EquipmentTemplate tmpl;
-        tmpl.id = 21001;
-        tmpl.name = "布衣";
-        tmpl.type = ET::ARMOR;
-        tmpl.quality = EQ::WHITE;
-        tmpl.level = 1;
-        tmpl.baseAttr.hp = 500;
-        tmpl.baseAttr.def = 50;
+        EquipmentTemplate tmpl(21001, "布衣", ET::ARMOR, EQ::WHITE); 
         tmpl.mainAffixType = AT::HP_FLAT;
         tmpl.mainAffixMin = 100;
         tmpl.mainAffixMax = 200;
@@ -225,80 +201,60 @@ void ItemConfig::initEquipments() {
     }
     
     {
-        EquipmentTemplate tmpl;
-        tmpl.id = 21002;
-        tmpl.name = "铁甲";
-        tmpl.type = ET::ARMOR;
-        tmpl.quality = EQ::BLUE;
-        tmpl.level = 20;
-        tmpl.baseAttr.hp = 2000;
-        tmpl.baseAttr.def = 200;
+        EquipmentTemplate tmpl(21002, "铁甲", ET::ARMOR, EQ::BLUE);
         tmpl.mainAffixType = AT::DEF_PERCENT;
         tmpl.mainAffixMin = 10;
         tmpl.mainAffixMax = 20;
         regEquipment(tmpl);
     }
-    
-    // ===== 头盔 (22001-22999) =====
-    {
-        EquipmentTemplate tmpl;
-        tmpl.id = 22001;
-        tmpl.name = "铁盔";
-        tmpl.type = ET::HELMET;
-        tmpl.quality = EQ::GREEN;
-        tmpl.level = 15;
-        tmpl.baseAttr.hp = 800;
-        tmpl.baseAttr.def = 100;
-        tmpl.mainAffixType = AT::HP_PERCENT;
-        tmpl.mainAffixMin = 8;
-        tmpl.mainAffixMax = 15;
-        regEquipment(tmpl);
-    }
-    
-    // ===== 鞋子 (23001-23999) =====
-    {
-        EquipmentTemplate tmpl;
-        tmpl.id = 23001;
-        tmpl.name = "疾风靴";
-        tmpl.type = ET::BOOTS;
-        tmpl.quality = EQ::BLUE;
-        tmpl.level = 25;
-        tmpl.baseAttr.speed = 20;
-        tmpl.mainAffixType = AT::SPEED_FLAT;
-        tmpl.mainAffixMin = 5;
-        tmpl.mainAffixMax = 10;
-        regEquipment(tmpl);
-    }
-    
-    // ===== 饰品 (24001-24999) =====
-    {
-        EquipmentTemplate tmpl;
-        tmpl.id = 24001;
-        tmpl.name = "力量戒指";
-        tmpl.type = ET::ACCESSORY_1;
-        tmpl.quality = EQ::PURPLE;
-        tmpl.level = 30;
-        tmpl.baseAttr.atk = 300;
-        tmpl.mainAffixType = AT::CRIT_RATE;
-        tmpl.mainAffixMin = 5;
-        tmpl.mainAffixMax = 10;
-        regEquipment(tmpl);
-    }
-    
-    {
-        EquipmentTemplate tmpl;
-        tmpl.id = 24002;
-        tmpl.name = "吸血项链";
-        tmpl.type = ET::ACCESSORY_2;
-        tmpl.quality = EQ::ORANGE;
-        tmpl.level = 40;
-        tmpl.baseAttr.hp = 1500;
-        tmpl.mainAffixType = AT::LIFESTEAL;
-        tmpl.mainAffixMin = 8;
-        tmpl.mainAffixMax = 15;
-        regEquipment(tmpl);
-    }
 }
+
+void ItemConfig::initHelmets()
+{
+    // ===== 头盔 (22001-22999) =====
+    EquipmentTemplate tmpl(22001, "铁盔", ET::HELMET, EQ::GREEN);
+    tmpl.mainAffixType = AT::HP_PERCENT;
+    tmpl.mainAffixMin = 8;
+    tmpl.mainAffixMax = 15;
+    regEquipment(tmpl);
+}
+
+void ItemConfig::initBoots()
+{
+    // ===== 鞋子 (23001-23999) =====
+    EquipmentTemplate tmpl(23001, "疾风靴", ET::BOOTS, EQ::BLUE);
+    tmpl.mainAffixType = AT::SPEED_FLAT;
+    tmpl.mainAffixMin = 5;
+    tmpl.mainAffixMax = 10;
+    regEquipment(tmpl);
+}
+
+void ItemConfig::initSteeds()
+{
+    // Implementation for steeds initialization
+}
+
+void ItemConfig::initTallys()
+{
+    // Implementation for tallys initialization
+}
+
+void ItemConfig::initTreasures()
+{
+    // Implementation for treasures initialization
+}
+
+void ItemConfig::initFamouss()
+{
+    // Implementation for famouss initialization
+}
+
+
+
+
+
+
+
 
 // ==================== 套装配置 ====================
 void ItemConfig::initSetBonuses() {
@@ -357,44 +313,4 @@ void ItemConfig::initSetBonuses() {
         
         regSetBonus(bonus);
     }
-}
-
-// ==================== 创建装备实例 ====================
-Equipment ItemConfig::createEquipment(int equipId, int level) const {
-    const auto* tmpl = getEquipment(equipId);
-    if (!tmpl) {
-        return Equipment();
-    }
-    
-    Equipment equip(tmpl->id, tmpl->name, tmpl->type, tmpl->quality, level);
-    equip.baseAttr = tmpl->baseAttr;
-    equip.setId = tmpl->setId;
-    
-    // 随机生成主词缀
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(tmpl->mainAffixMin, tmpl->mainAffixMax);
-    equip.mainAffix = {tmpl->mainAffixType, dis(gen)};
-    
-    // 根据品质生成副词缀
-    int subAffixCount = static_cast<int>(tmpl->quality) - 1;  // 绿装1个，蓝装2个...
-    subAffixCount = std::min(subAffixCount, 4);
-    
-    // 简化：随机生成副词缀（实际可以做更复杂的词缀池）
-    static const AffixType possibleAffixes[] = {
-        AffixType::CRIT_RATE, AffixType::CRIT_DAMAGE,
-        AffixType::HIT_RATE, AffixType::DODGE_RATE,
-        AffixType::DAMAGE_BONUS, AffixType::LIFESTEAL
-    };
-    
-    std::uniform_int_distribution<> affixDis(0, 5);
-    std::uniform_int_distribution<> valueDis(3, 8);
-    
-    for (int i = 0; i < subAffixCount; ++i) {
-        AffixType type = possibleAffixes[affixDis(gen)];
-        int64_t value = valueDis(gen);
-        equip.subAffixes.push_back({type, value});
-    }
-    
-    return equip;
 }

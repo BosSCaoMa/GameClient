@@ -21,9 +21,11 @@ struct ItemTemplate {
     };
     std::vector<Effect> effects;
     
-    ItemTemplate() 
-        : id(0), type(ItemType::NONE), subType(ConsumableType::HP_POTION)
-        , quality(1), maxStack(1) {}
+    ItemTemplate() = default;
+    ItemTemplate(int id, const std::string& name_, ItemType type_, 
+        ConsumableType subType_, int quality_, int maxStack_ = 1)
+        : id(id), name(name_), type(type_), subType(subType_)
+        , quality(quality_), maxStack(maxStack_) {}
 };
 
 // ==================== 装备模板 ====================
@@ -34,23 +36,27 @@ struct EquipmentTemplate {
     EquipmentQuality quality;
     int level;
     
-    BattleAttr baseAttr;
     AffixType mainAffixType;
     int mainAffixMin;
     int mainAffixMax;
+    std::vector<int> skillIds;
     
     int setId;
     
-    EquipmentTemplate()
-        : id(0), type(EquipmentType::WEAPON)
-        , quality(EquipmentQuality::WHITE)
-        , level(1), mainAffixType(AffixType::NONE)
-        , mainAffixMin(0), mainAffixMax(0), setId(0) {}
+    EquipmentTemplate() = default;
+    EquipmentTemplate(int id, const std::string& name_, EquipmentType type_, 
+        EquipmentQuality quality_, int level_ = 1, int setId_ = 0)
+        : id(id), name(name_), type(type_), quality(quality_), level(level_)
+        , mainAffixType(AffixType::NONE), setId(setId_) {}
 };
 
 // ==================== 物品配置管理器 ====================
 class ItemConfig {
 public:
+    using ET = EquipmentType;
+    using EQ = EquipmentQuality;
+    using AT = AffixType;
+
     static ItemConfig& instance() {
         static ItemConfig inst;
         return inst;
@@ -86,12 +92,22 @@ private:
     ItemConfig() { init(); }
     ItemConfig(const ItemConfig&) = delete;
     ItemConfig& operator=(const ItemConfig&) = delete;
-    
+
     void init();
     void initConsumables();
     void initMaterials();
     void initEquipments();
     void initSetBonuses();
+
+    // 初始化装备
+    void initWeapons();
+    void initArmors();
+    void initHelmets();
+    void initBoots();
+    void initSteeds();
+    void initTallys();
+    void initTreasures();
+    void initFamouss();
     
     std::unordered_map<int, ItemTemplate> items_;
     std::unordered_map<int, EquipmentTemplate> equipments_;

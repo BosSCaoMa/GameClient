@@ -10,6 +10,7 @@ enum class ItemType {
 };
 
 enum class ConsumableType {
+    NONE,          // 无
     HP_POTION,      // 生命药水
     RAGE_POTION,    // 怒气药水
     EXP_POTION,     // 经验药水
@@ -22,9 +23,10 @@ enum class EquipmentType {
     ARMOR,          // 盔甲
     HELMET,         // 头盔
     BOOTS,          // 鞋子
-    ACCESSORY_1,    // 饰品1
-    ACCESSORY_2,    // 饰品2
-    
+    STEED,         // 坐骑
+    TALLY,         // 兵符
+    TREASURE,      // 法宝
+    FAMOUS,        // 名将
     COUNT           // 装备栏数量
 };
 
@@ -67,6 +69,7 @@ enum class AffixType {
     COUNTER_RATE,       // 反击率 +X%
     RAGE_GAIN,          // 怒气获取 +X%
     HEAL_BONUS,         // 治疗加成 +X%
+    MULTI_HIT_RATE,      // 连击率 +X%
     
     // 抗性
     STUN_RESIST,        // 眩晕抗性 +X%

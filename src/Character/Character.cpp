@@ -1,6 +1,7 @@
 #include "Character.h"
 #include "ItemConfig.h"
 #include <algorithm>
+#include "characterConfig.h"
 #include <cmath>
 
 // ==================== 构造函数 ====================
@@ -180,9 +181,8 @@ void Character::levelUp() {
     initExpMax();
     
     // 重新计算属性（CharacterConfig 会根据等级计算基础属性）
-    // 这里简化处理，实际需要从配置重新生成。todo
-    // originAttr = CharacterConfig::instance().calculateAttrForLevel(id, level);
-    
+    // 基础属性->等级加固定值-->突破/星级加成
+    originAttr = CharacterConfig::instance().calculateAttrForLevel(id, level, star, breakthrough);
     recalculateAttr();
 }
 

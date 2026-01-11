@@ -6,6 +6,7 @@ void SkillConfig::initSkills() {
     using Tr = SkillTrigger;
     
     // ==================== 基础技能 ====================
+    reg(Skill(0, "无技能", Tr::None)); // 占位无效技能
     
     // 普通攻击 (ID: 1-99 保留给基础技能)
     reg(Skill(1, "普通攻击", Tr::NORMAL_ATTACK)

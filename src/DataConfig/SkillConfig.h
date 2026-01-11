@@ -44,4 +44,4 @@ private:
 };
 
 // ==================== 便捷访问宏 ====================
-#define SKILL(id) SkillConfig::instance().get(id)
+#define GET_SKILL(id) SkillConfig::instance().get(id)

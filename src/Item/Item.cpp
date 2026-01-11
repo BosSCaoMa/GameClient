@@ -2,129 +2,133 @@
 #include <sstream>
 #include <iomanip>
 
+// ==================== 计算装备总属性 ====================
+BattleAttr Equipment::calculateTotalAttr(const BattleAttr& charAttr) const {
+    // 1. 从装备基础属性开始
+    BattleAttr total = charAttr;
+    
+    // 2. 应用主词缀
+    applyAffix(total, charAttr, mainAffix);
+    
+    // 3. 应用所有副词缀
+    for (const auto& affix : subAffixes) {
+        applyAffix(total, charAttr, affix);
+    }
+    
+    return total;
+}
+
 // ==================== 应用词缀到属性 ====================
-void Equipment::applyAffix(BattleAttr& attr, const EquipmentAffix& affix, 
-                           const BattleAttr& baseAttr) {
+void Equipment::applyAffix(BattleAttr& total, const BattleAttr& charAttr, const EquipmentAffix& affix)
+{
     switch (affix.type) {
         case AffixType::NONE:
             break;
         
         // ========== 攻击力 ==========
         case AffixType::ATK_FLAT:
-            attr.atk += affix.value;
+            total.atk += affix.value;
             break;
         
         case AffixType::ATK_PERCENT:
             // 基于基础攻击力的百分比加成
-            attr.atk += baseAttr.atk * affix.value / 100;
+            total.atk += charAttr.atk * affix.value / 100;
             break;
         
         // ========== 防御力 ==========
         case AffixType::DEF_FLAT:
-            attr.def += affix.value;
+            total.def += affix.value;
             break;
         
         case AffixType::DEF_PERCENT:
-            attr.def += baseAttr.def * affix.value / 100;
+            total.def += charAttr.def * affix.value / 100;
             break;
         
         // ========== 生命值 ==========
         case AffixType::HP_FLAT:
-            attr.hp += affix.value;
-            attr.maxHp += affix.value;
+            total.hp += affix.value;
+            total.maxHp += affix.value;
             break;
         
         case AffixType::HP_PERCENT:
-            attr.hp += baseAttr.hp * affix.value / 100;
-            attr.maxHp += baseAttr.maxHp * affix.value / 100;
+            total.hp += charAttr.hp * affix.value / 100;
+            total.maxHp += charAttr.maxHp * affix.value / 100;
             break;
         
         // ========== 速度 ==========
         case AffixType::SPEED_FLAT:
-            attr.speed += affix.value;
+            total.speed += affix.value;
             break;
         
         // ========== 暴击 ==========
         case AffixType::CRIT_RATE:
-            attr.critRate += affix.value;
+            total.critRate += affix.value;
             break;
         
         case AffixType::CRIT_DAMAGE:
-            attr.critDamage += affix.value;
+            total.critDamage += affix.value;
             break;
         
         // ========== 命中/闪避 ==========
         case AffixType::HIT_RATE:
-            attr.hitRate += affix.value;
+            total.hitRate += affix.value;
             break;
         
         case AffixType::DODGE_RATE:
-            attr.dodgeRate += affix.value;
+            total.dodgeRate += affix.value;
             break;
         
         // ========== 伤害加成 ==========
         case AffixType::DAMAGE_BONUS:
             // 存储在扩展属性中（如果需要）
-            // attr.damageBonus += affix.value;
+            total.damageBonus += affix.value;
             break;
         
         case AffixType::DAMAGE_REDUCTION:
-            // attr.damageReduction += affix.value;
+            total.damageReduction += affix.value;
             break;
         
         case AffixType::SKILL_DAMAGE:
-            // attr.skillDamage += affix.value;
+            total.skillDamage += affix.value;
             break;
         
         // ========== 特殊效果 ==========
         case AffixType::LIFESTEAL:
-            // attr.lifesteal += affix.value;
+            total.lifesteal += affix.value;
             break;
         
         case AffixType::COUNTER_RATE:
-            // attr.counterRate += affix.value;
+            total.counterRate += affix.value;
             break;
         
         case AffixType::RAGE_GAIN:
-            // attr.rageGain += affix.value;
+            total.rageGain += affix.value;
             break;
         
+        case AffixType::MULTI_HIT_RATE:
+            total.mutiHitRate += affix.value;
+            break;
+
         case AffixType::HEAL_BONUS:
-            // attr.healBonus += affix.value;
+            total.healBonus += affix.value;
             break;
         
         // ========== 抗性 ==========
         case AffixType::STUN_RESIST:
-            // attr.stunResist += affix.value;
+            total.stunResist += affix.value;
             break;
         
         case AffixType::SILENCE_RESIST:
-            // attr.silenceResist += affix.value;
+            total.silenceResist += affix.value;
             break;
         
         case AffixType::POISON_RESIST:
-            // attr.poisonResist += affix.value;
+            total.poisonResist += affix.value;
             break;
         
         default:
             break;
     }
-}
-
-// ==================== 计算装备总属性 ====================
-BattleAttr Equipment::calculateTotalAttr(const BattleAttr& charBaseAttr) const {
-    // 1. 从装备基础属性开始
-    BattleAttr total = baseAttr;
-    
-    // 2. 应用主词缀
-    applyAffix(total, mainAffix, charBaseAttr);
-    
-    // 3. 应用所有副词缀
-    for (const auto& affix : subAffixes) {
-        applyAffix(total, affix, charBaseAttr);
-    }
-    
-    return total;
 }
 
 // ==================== 词缀描述 ====================

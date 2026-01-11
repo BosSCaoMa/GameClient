@@ -1,15 +1,16 @@
 # GameClient
 游戏服务器
 
-project/
-├── BattleTypes.h        # 所有枚举定义
-├── BattleAttr.h         # 战斗属性结构
-├── Skill.h              # 技能效果、Buff、技能类
-├── Character.h          # 角色类
-├── BattleCharacter.h    # 战斗角色副本
-├── Player.h             # 玩家类
-├── BattleManager.h      # 战斗管理器头文件
-├── BattleManager.cpp    # 战斗管理器实现
+核心模块
+
+- 物品
+物品不涉及升级，所以基础部分全部保存在itemconfig中，背包系统保存{id, count}
+- 装备
+- 效果
+- 技能
+- 武将
+- 玩家
+- 战斗
 
 
 

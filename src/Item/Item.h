@@ -5,23 +5,6 @@
 #include "BattleAttr.h"
 #include <string>
 
-// ==================== 基础物品 ====================
-struct Item {
-    int id;
-    std::string name;
-    ItemType type;
-    int quality;            // 品质 1-6
-    std::string description;
-    int maxStack;           // 最大堆叠数
-    
-    Item() : id(0), type(ItemType::NONE), quality(1), maxStack(1) {}
-    
-    Item(int id_, const std::string& name_, ItemType type_, 
-         int quality_ = 1, int maxStack_ = 1)
-        : id(id_), name(name_), type(type_)
-        , quality(quality_), maxStack(maxStack_) {}
-};
-
 // ==================== 装备词缀 ====================
 struct EquipmentAffix {
     AffixType type;
@@ -40,35 +23,30 @@ struct Equipment {
     std::string name;
     EquipmentType type;
     EquipmentQuality quality;
-    int level;
-    
-    // 基础属性（固定） 百分比词缀统一基于角色基础属性计算，避免复杂的叠加逻辑。
-    BattleAttr baseAttr;
+    int level; // 强化等级 todo
     
     // 词缀（随机）
     EquipmentAffix mainAffix;
     std::vector<EquipmentAffix> subAffixes;
     
+    std::vector<int> skillIds;  // 装备携带的技能ID列表
     // 套装ID
     int setId;
     
-    Equipment() 
-        : id(0), type(EquipmentType::WEAPON)
-        , quality(EquipmentQuality::WHITE)
-        , level(1), setId(0) {}
+    Equipment() = default;
     
     Equipment(int id_, const std::string& name_, EquipmentType type_, 
               EquipmentQuality quality_, int level_)
         : id(id_), name(name_), type(type_)
         , quality(quality_), level(level_), setId(0) {}
-    
-    // ==================== 计算总属性 ====================
-    // baseAttr: 用于百分比计算的基础值（通常是武将的基础属性）
-    BattleAttr calculateTotalAttr(const BattleAttr& baseAttr = BattleAttr()) const;
 
+    bool hasSkill() const { return !skillIds.empty(); }
+
+    // 传入角色的基础属性，返回装备加成后的属性
+    BattleAttr calculateTotalAttr(const BattleAttr& charAttr) const;
+private:
      // 应用单个词缀到属性上
-    static void applyAffix(BattleAttr& attr, const EquipmentAffix& affix, 
-        const BattleAttr& baseAttr);
+    static void applyAffix(BattleAttr& total, const BattleAttr& charAttr, const EquipmentAffix& affix);
 };
 
 // ==================== 套装效果 ====================
