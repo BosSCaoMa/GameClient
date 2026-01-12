@@ -60,71 +60,79 @@ enum class ValueType {
 enum class EffectType {
     NONE = 0,
     
-    // 伤害/治疗
+    // 伤害/治疗/怒气等即时效果
     DAMAGE,             // 伤害
     HEAL,               // 治疗
-    
-    // 怒气
     RAGE_ADD,           // 增加怒气
     RAGE_REDUCE,        // 减少怒气
-    
+    PIERCE,             // 穿透（伤害无视护盾/部分减伤，新增）
+
+
     // 属性Buff
+    BUFF_MAX_HP,        // 最大生命值加成
     BUFF_ATK,           // 攻击力加成
     BUFF_DEF,           // 防御力加成
     BUFF_SPEED,         // 速度加成
     BUFF_CRIT_RATE,     // 暴击率加成
-    BUFF_CRIT_RESIST,    // 抗暴率
+    BUFF_CRIT_RESIST,   // 抗暴率
     BUFF_HIT_RATE,      // 命中率加成
     BUFF_DODGE_RATE,    // 闪避率加成
     
+    // ================负面效果开始====================
     // 控制
+    DEBUFF_BEGIN,
     STUN,               // 眩晕（无法行动）
     SILENCE,            // 沉默（无法释放技能，只能普攻）
     FREEZE,             // 冰冻（无法行动，受到伤害解除）
     TAUNT,              // 嘲讽（强制攻击释放者）
-    INJURY,             // 受伤（降低治疗效果）
+    INJURY,             // 受伤（无法回血）
     
     // DOT（持续伤害）
     POISON,             // 中毒
-    BURN,               // 灼烧
-    BLEED,              // 流血
+    BURN,               // 灼烧(减缓速度)
+    BLEED,              // 流血(直接损失体力值)
     
+    DEBUFF_END,
+    // ================负面效果结束=====================
+
     // 护盾
     SHIELD,             // 护盾
-    
+    BARRIER,            // 屏障（免疫单次控制效果，新增）
+
+
     // 特殊
     REVIVE,             // 复活
     DISPEL,             // 驱散（移除敌方Buff）
     CLEANSE,            // 净化（移除己方Debuff）
     IMMUNITY,           // 免疫控制
     INVINCIBLE,         // 无敌
-    
+    TRANSFER_DEBUFF,    // Debuff转移（将自身Debuff转给敌方）
+
+    // 回合机制效果（新增，回合制特色）
+    EXTRA_TURN,         // 额外回合（立即获得一次行动机会）
+    SKIP_TURN,          // 跳过回合（强制跳过目标下一回合）
+
     // 标记类（高级机制）
-    MARK_DAMAGE,        // 伤害标记（受到伤害时额外伤害）
     MARK_HEAL,          // 治疗标记（受到治疗时额外治疗）
+    MARK_DAMAGE,        // 伤害标记（受到伤害时额外伤害）
+    MARK_KILL,          // 斩杀标记（血量低于阈值时被秒杀）
 };
 
-const std::unordered_set<EffectType> debuffTypes = {
-    EffectType::STUN,
-    EffectType::SILENCE,
-    EffectType::FREEZE,
-    EffectType::POISON,
-    EffectType::BURN,
-    EffectType::BLEED,
-    EffectType::INJURY,
-    EffectType::TAUNT
-};
-
-bool IsDebuff(EffectType type)
+bool IsDebuff(EffectType type, int64_t value)
 {
-    return debuffTypes.find(type) != debuffTypes.end();
+    if (type >= EffectType::DEBUFF_BEGIN && type <= EffectType::DEBUFF_END) {
+        return true;
+    }
+    return value < 0;
 }
 
 // ==================== 技能触发时机 ====================
 enum class SkillTrigger {
-    None = 999,   // 默认无触发
+    None = 999,
+
     NORMAL_ATTACK = 0,  // 普通攻击
     RAGE_SKILL = 1,     // 怒气技能
+
     BATTLE_START = 2,   // 开局技能
     ON_HIT = 3,         // 受击技能
     ON_LOW_HP = 4,      // 名刀/濒死技能
@@ -132,6 +140,29 @@ enum class SkillTrigger {
     ON_ALLY_DEATH = 6,  // 队友阵亡
     ROUND_START = 7,    // 回合开始
     ROUND_END = 8       // 回合结束
+};
+
+enum class SkillTrigger {
+
+    NORMAL_ATTACK, // 普通攻击
+    RAGE_SKILL,    // 怒气技能
+    ON_SAME_CAMP, // 合击技能
+    // 战斗阶段触发
+    BATTLE_START,   // 开局技能
+    ROUND_START,    // 回合开始
+    ROUND_END,      // 回合结束
+    TURN_START,     // 自身行动开始
+    TURN_END,       // 自身行动结束
+
+    // 受击/伤害相关触发
+    ON_HIT,          // 受击技能
+    ON_KILL,         // 击杀敌人
+    ON_DODGE,        // 闪避攻击时
+
+    // 血量/状态触发
+    ON_LOW_HP,  // 濒死技能（血量低于阈值）
+    ON_CONTROL, // 受到控制效果时
+    ON_DEATH,  // 阵亡技能
 };
 
 enum class PlayerAttrType {

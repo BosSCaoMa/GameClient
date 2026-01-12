@@ -14,7 +14,7 @@ struct Buff {
     
     Buff(EffectType t, int64_t v, int dur, int src = 0)
         : type(t), value(v), duration(dur), sourceId(src) {
-        isDebuff = IsDebuff(t);
+        isDebuff = IsDebuff(t, value);
     }
     
     bool tick() { return --duration <= 0; }

@@ -51,5 +51,4 @@ struct SkillEffect {
     static SkillEffect Revive(TargetType t, int64_t hpPercent, int ch = 100);
     static SkillEffect Dispel(TargetType t, int64_t count = 99, int ch = 100);
     static SkillEffect Cleanse(TargetType t, int64_t count = 99, int ch = 100);
-    static SkillEffect Lifesteal(TargetType t, int64_t atkPercent, int64_t stealPercent, int ch = 100);
 };
