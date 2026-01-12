@@ -218,7 +218,8 @@ bool Character::canUpgradeStar() const {
     return star < 5;
 }
 
-void Character::upgradeStar() {
+void Character::upgradeStar()
+{
     if (!canUpgradeStar()) return;
     
     star++;

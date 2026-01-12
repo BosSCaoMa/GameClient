@@ -38,8 +38,16 @@ private:
     SkillConfig(const SkillConfig&) = delete;
     SkillConfig& operator=(const SkillConfig&) = delete;
     
+    using T = TargetType;
+    using E = EffectType;
+    using Tr = SkillTrigger;
     void initSkills();
-    
+    void initQunSkills();
+    void initWeiSkills();
+    void initShuSkills();
+    void initWuSkills();
+    void initShenSkills();
+    void initBaseSkills();
     std::unordered_map<int, Skill> skills_;
 };
 

@@ -3,7 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <random>
-
+#include <unordered_map>
 class BattleCharacter {
 public:
     Character* original;        // 原始角色
@@ -17,8 +17,9 @@ public:
     BattleAttr baseAttr;        // 战斗开始快照
     BattleAttr currentAttr;     // 当前属性
     
-    std::vector<Skill> skills;
+    std::unordered_map<SkillTrigger, Skill> skills;
     std::vector<Buff> buffs;
+
     
     bool isAlive = true;     // 是否存活
     bool hasActed = false;     // 本回合是否已行动

@@ -62,6 +62,8 @@ enum class EffectType {
     
     // 伤害/治疗/怒气等即时效果
     DAMAGE,             // 伤害
+    PIERCE,             // 穿透（伤害无视护盾/部分减伤）
+    TRUE_DAMAGE,        // 真实伤害（无视防御/减伤/抗性，直接生效）
     HEAL,               // 治疗
     RAGE_ADD,           // 增加怒气
     RAGE_REDUCE,        // 减少怒气
@@ -77,7 +79,11 @@ enum class EffectType {
     BUFF_CRIT_RESIST,   // 抗暴率
     BUFF_HIT_RATE,      // 命中率加成
     BUFF_DODGE_RATE,    // 闪避率加成
-    
+
+    // 持续BUFF
+    BUFF_REGEN,         // 持续回血
+    BUFF_IMMUNITY,      // 霸体（免疫控制效果）
+
     // ================负面效果开始====================
     // 控制
     DEBUFF_BEGIN,
@@ -91,7 +97,8 @@ enum class EffectType {
     POISON,             // 中毒
     BURN,               // 灼烧(减缓速度)
     BLEED,              // 流血(直接损失体力值)
-    
+    CURSE,              // 诅咒（持续损失怒气+少量生命值）
+
     DEBUFF_END,
     // ================负面效果结束=====================
 
@@ -99,8 +106,8 @@ enum class EffectType {
     SHIELD,             // 护盾
     BARRIER,            // 屏障（免疫单次控制效果，新增）
 
-
     // 特殊
+    LOCK_BLEED,         // 锁血（生命值不会低于1）
     REVIVE,             // 复活
     DISPEL,             // 驱散（移除敌方Buff）
     CLEANSE,            // 净化（移除己方Debuff）
@@ -108,14 +115,11 @@ enum class EffectType {
     INVINCIBLE,         // 无敌
     TRANSFER_DEBUFF,    // Debuff转移（将自身Debuff转给敌方）
 
-    // 回合机制效果（新增，回合制特色）
-    EXTRA_TURN,         // 额外回合（立即获得一次行动机会）
-    SKIP_TURN,          // 跳过回合（强制跳过目标下一回合）
-
     // 标记类（高级机制）
     MARK_HEAL,          // 治疗标记（受到治疗时额外治疗）
     MARK_DAMAGE,        // 伤害标记（受到伤害时额外伤害）
     MARK_KILL,          // 斩杀标记（血量低于阈值时被秒杀）
+    MARK_PROTECT,       // 保护标记（友方攻击时，优先攻击标记持有者）
 };
 
 bool IsDebuff(EffectType type, int64_t value)
@@ -127,23 +131,8 @@ bool IsDebuff(EffectType type, int64_t value)
 }
 
 // ==================== 技能触发时机 ====================
-enum class SkillTrigger {
-    None = 999,
-
-    NORMAL_ATTACK = 0,  // 普通攻击
-    RAGE_SKILL = 1,     // 怒气技能
-
-    BATTLE_START = 2,   // 开局技能
-    ON_HIT = 3,         // 受击技能
-    ON_LOW_HP = 4,      // 名刀/濒死技能
-    ON_DEATH = 5,       // 阵亡技能
-    ON_ALLY_DEATH = 6,  // 队友阵亡
-    ROUND_START = 7,    // 回合开始
-    ROUND_END = 8       // 回合结束
-};
-
-enum class SkillTrigger {
-
+enum class SkillTrigger
+{
     NORMAL_ATTACK, // 普通攻击
     RAGE_SKILL,    // 怒气技能
     ON_SAME_CAMP, // 合击技能
@@ -155,14 +144,17 @@ enum class SkillTrigger {
     TURN_END,       // 自身行动结束
 
     // 受击/伤害相关触发
-    ON_HIT,          // 受击技能
-    ON_KILL,         // 击杀敌人
+    ON_HIT,          // 受到攻击时
+    ON_BEFORE_HIT,   // 受到攻击前（用于无敌的判断）
+    ON_CONTRAL,      // 受到控制时
     ON_DODGE,        // 闪避攻击时
-
+    ON_KILL,         // 击杀敌人
     // 血量/状态触发
-    ON_LOW_HP,  // 濒死技能（血量低于阈值）
+
     ON_CONTROL, // 受到控制效果时
     ON_DEATH,  // 阵亡技能
+
+    None          // 无触发
 };
 
 enum class PlayerAttrType {

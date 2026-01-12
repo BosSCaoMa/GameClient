@@ -12,13 +12,14 @@ class Character {
 public:
     // ==================== 基础信息 ====================
     int id;
+    int relid; // 关联角色id，用于触发合击技能
     std::string name;
     int level;
     int star;           // 星级 1-5
     int quality;        // 品质 1-5
     
     // ==================== 属性 ====================
-    BattleAttr originAttr;        // 基础属性（等级成长）
+    BattleAttr originAttr;        // 基础属性（等级/星级/突破成长）
     BattleAttr baseAttr;     // 当前属性（基础 + 装备 + Buff）
     
     // ==================== 技能 ====================

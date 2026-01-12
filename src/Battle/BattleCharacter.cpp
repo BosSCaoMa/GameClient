@@ -14,13 +14,14 @@ BattleCharacter::BattleCharacter(Character* ch, int battleId)
     currentAttr = baseAttr;
     
     // 复制技能
-    for (const Skill& s : ch->skills) {
-        skills.push_back(s);
+    for (const auto& pair : ch->skills) {
+        skills[pair.first] = pair.second;
     }
     
 }
 
 // ==================== Buff管理 ====================
+// 添加buff之后，首先会重新计算属性，过期之后会进行删除，而伤害类Buff会在tickBuffs中处理
 void BattleCharacter::addBuff(EffectType type, int64_t value, int duration, int sourceId)
 {
     // 同类型同来源刷新
@@ -38,19 +39,20 @@ void BattleCharacter::addBuff(EffectType type, int64_t value, int duration, int 
 
 void BattleCharacter::tickBuffs()
 {
-    // 处理持续伤害
+    // 处理持续, todo:处理各种buff效果
     for (const Buff& b : buffs) {
         if (b.type == EffectType::POISON || 
             b.type == EffectType::BURN ||
             b.type == EffectType::BLEED) {
             takeDamage(b.value, false);
+        } else if (b.type == EffectType::BUFF_REGEN) {
+            heal(b.value);
         }
     }
     
     // 移除过期Buff
     buffs.erase(
-        std::remove_if(buffs.begin(), buffs.end(),
-            [](Buff& b) { return b.tick(); }),
+        std::remove_if(buffs.begin(), buffs.end(), [](Buff& b) { return b.tick(); }),
         buffs.end()
     );
     recalculateAttr();
@@ -71,6 +73,9 @@ void BattleCharacter::recalculateAttr()
     
     for (const Buff& buff : buffs) {
         switch (buff.type) {
+            case EffectType::BUFF_MAX_HP:
+                currentAttr.maxHp = baseAttr.maxHp * (100 + buff.value) / 100;
+                break;
             case EffectType::BUFF_ATK:
                 currentAttr.atk = baseAttr.atk * (100 + buff.value) / 100;
                 break;
@@ -142,7 +147,7 @@ void BattleCharacter::heal(int64_t amount) {
 }
 
 void BattleCharacter::addRage(int amount) {
-    currentAttr.rage = std::clamp(currentAttr.rage + amount, 0, currentAttr.maxRage);
+    currentAttr.rage = std::clamp(currentAttr.rage + amount, 0, 6); // 【设定】假设最大怒气为6
 }
 
 void BattleCharacter::addShield(int64_t amount) {
@@ -151,9 +156,9 @@ void BattleCharacter::addShield(int64_t amount) {
 
 // ==================== 技能相关 ====================
 Skill* BattleCharacter::getSkill(SkillTrigger trigger) {
-    int idx = static_cast<int>(trigger);
-    if (idx < skills.size() && skills[idx].id != 0) {
-        return &skills[idx];
+    auto it = skills.find(trigger);
+    if (it != skills.end()) {
+        return &it->second;
     }
     return nullptr;
 }

@@ -1,10 +1,17 @@
 #include "SkillConfig.h"
 
-void SkillConfig::initSkills() {
-    using T = TargetType;
-    using E = EffectType;
-    using Tr = SkillTrigger;
-    
+void SkillConfig::initSkills()
+{
+    initBaseSkills();
+    initQunSkills();
+    initWeiSkills();
+    initShuSkills();
+    initWuSkills();
+    initShenSkills();
+}
+
+void SkillConfig::initBaseSkills()
+{
     // ==================== 基础技能 ====================
     reg(Skill(0, "无技能", Tr::None)); // 占位无效技能
     
@@ -134,4 +141,24 @@ void SkillConfig::initSkills() {
     reg(Skill(703, "夺气", Tr::RAGE_SKILL)
         .addEffect(SkillEffect::Damage(T::ENEMY_SINGLE, 100))
         .addEffect(SkillEffect::RageReduce(T::ENEMY_SINGLE, 50)));
+}
+
+void SkillConfig::initQunSkills()
+{
+
+}
+
+void SkillConfig::initWeiSkills()
+{
+
+}
+
+void SkillConfig::initShuSkills()
+{
+
+}
+
+void SkillConfig::initWuSkills()
+{
+
 }

@@ -10,7 +10,6 @@ struct SkillEffect {
     int64_t value;
     int duration;       // 持续时间: 0 = 即时
     int chance;         // 触发概率: 100 = 100%
-    
     // 构造函数声明
     SkillEffect();
     SkillEffect(TargetType t, EffectType e, ValueType vt, int64_t v, 
