@@ -16,7 +16,7 @@ Character CharacterConfig::create(int charId, int level, int star, int breakthro
     ch.quality = tmpl->quality;
     ch.breakthrough = breakthrough;
     
-    // 2. 计算属性 todo 初始化的时候就用基础属性
+    // 2. 计算属性
     ch.originAttr = tmpl->baseAttr;
     ch.baseAttr = ch.originAttr;  // 初始时，当前属性 = 基础属性
     

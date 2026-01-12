@@ -70,7 +70,7 @@ SkillEffect SkillEffect::Buff(TargetType t, EffectType e, int64_t val, int dur, 
 
 SkillEffect SkillEffect::BuffPercent(TargetType t, EffectType e, int64_t percent, 
                         int dur, int ch) {
-    return {t, e, ValueType::PERCENT, percent, dur, ch};
+    return {t, e, ValueType::PERCENT_TARGET_HP, percent, dur, ch};
 }
 
 // ==================== 控制类实现 ====================

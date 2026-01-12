@@ -168,6 +168,7 @@ Skill* BattleCharacter::getNormalAttack() {
 }
 
 Skill* BattleCharacter::getRageSkill() {
+    // todo: 合击技能
     Skill* skill = getSkill(SkillTrigger::RAGE_SKILL);
     if (skill && currentAttr.rage >= 4) {
         return skill;

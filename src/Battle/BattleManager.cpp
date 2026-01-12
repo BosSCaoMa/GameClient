@@ -4,6 +4,8 @@
 #include <cmath>
 #include "LogM.h"
 #include <iostream>
+
+using namespace std;
 // ==================== 构造函数 ====================
 BattleManager::BattleManager(Player* user, Player* enemy, LogCallback logCallback)
     : userPlayer_(user)
@@ -15,12 +17,74 @@ BattleManager::BattleManager(Player* user, Player* enemy, LogCallback logCallbac
 {
     LOG_DEBUG("BattleManager initialized, user: %d, enemy: %d", userPlayer_->id, enemyPlayer_->id);
     if (!logCallback_) {
-        setLogCallback([](const std::string& msg) {
-            std::cout << msg << std::endl;
+        setLogCallback([](const string& msg) {
+            cout << msg << endl;
         });
     }
-    rng_.seed(std::random_device{}());
+    rng_.seed(random_device{}());
     initBattle();
+}
+
+// ==================== 初始化 ====================
+void BattleManager::initBattle()
+{
+    userTeam_.clear();
+    enemyTeam_.clear();
+    actionOrder_.clear();
+    round_ = 0;
+    result_ = Result::ONGOING;
+    
+    createBattleCharacters();
+    buildUnitMap();
+    log("战斗开始");
+}
+
+void BattleManager::createBattleCharacters() {
+    
+    // 己方主角
+    int battleId = 1;
+    if (userPlayer_->mainCharacter) {
+        userTeam_.push_back(BattleCharacter(
+            userPlayer_->mainCharacter, battleId++));
+    }
+    
+    // 己方武将
+    for (size_t i = 0; i < userPlayer_->battleTeam.size() && i < 5; ++i) {
+        int charId = userPlayer_->battleTeam[i];
+        auto it = userPlayer_->characters.find(charId);
+        if (it != userPlayer_->characters.end()) {
+            userTeam_.push_back(BattleCharacter(
+                &it->second, battleId++));
+        }
+    }
+    
+    // 敌方主角（负ID）
+    battleId = -1;
+    if (enemyPlayer_->mainCharacter) {
+        enemyTeam_.push_back(BattleCharacter(
+            enemyPlayer_->mainCharacter, battleId--));
+    }
+    
+    // 敌方武将
+    for (size_t i = 0; i < enemyPlayer_->battleTeam.size() && i < 5; ++i) {
+        int charId = enemyPlayer_->battleTeam[i];
+        auto it = enemyPlayer_->characters.find(charId);
+        if (it != enemyPlayer_->characters.end()) {
+            enemyTeam_.push_back(BattleCharacter(
+                &it->second, battleId--));
+        }
+    }
+}
+
+void BattleManager::buildUnitMap()
+{
+    unitMap.clear();
+    for (auto& ch : userTeam_) {
+        unitMap[ch.battleId] = &ch;
+    }
+    for (auto& ch : enemyTeam_) {
+        unitMap[ch.battleId] = &ch;
+    }
 }
 
 // ==================== 公共接口.runBattle开始战斗 ====================
@@ -47,13 +111,8 @@ BattleManager::Result BattleManager::runBattle()
 
 BattleManager::Result BattleManager::executeRound()
 {
-    if (result_ != Result::ONGOING) {
-        return result_;
-    }
-    
     round_++;
-    LOG_INFO("===== 第 %d 回合 =====", round_);
-    
+    log("----- 回合 " + to_string(round_) + " 开始 -----");
     // 1. 回合开始阶段
     onRoundStart();
     
@@ -100,63 +159,15 @@ bool BattleManager::isOver() const {
     return result_ != Result::ONGOING;
 }
 
-const std::vector<BattleCharacter>& BattleManager::getUserTeam() const {
+const vector<BattleCharacter>& BattleManager::getUserTeam() const {
     return userTeam_;
 }
 
-const std::vector<BattleCharacter>& BattleManager::getEnemyTeam() const {
+const vector<BattleCharacter>& BattleManager::getEnemyTeam() const {
     return enemyTeam_;
 }
 
-// ==================== 初始化 ====================
-void BattleManager::initBattle() {
-    userTeam_.clear();
-    enemyTeam_.clear();
-    actionOrder_.clear();
-    round_ = 0;
-    result_ = Result::ONGOING;
-    
-    createBattleCharacters();
-    
-    log("战斗开始");
-}
 
-void BattleManager::createBattleCharacters() {
-    int battleId = 1;
-    
-    // 己方主角
-    if (userPlayer_->character) {
-        userTeam_.push_back(BattleCharacter(
-            userPlayer_->character, battleId++));
-    }
-    
-    // 己方武将
-    for (size_t i = 0; i < userPlayer_->characterOrder.size() && i < 5; ++i) {
-        int charId = userPlayer_->characterOrder[i];
-        auto it = userPlayer_->characters.find(charId);
-        if (it != userPlayer_->characters.end()) {
-            userTeam_.push_back(BattleCharacter(
-                &it->second, battleId++));
-        }
-    }
-    
-    // 敌方主角（负ID）
-    battleId = -1;
-    if (enemyPlayer_->character) {
-        enemyTeam_.push_back(BattleCharacter(
-            enemyPlayer_->character, battleId--));
-    }
-    
-    // 敌方武将
-    for (size_t i = 0; i < enemyPlayer_->characterOrder.size() && i < 5; ++i) {
-        int charId = enemyPlayer_->characterOrder[i];
-        auto it = enemyPlayer_->characters.find(charId);
-        if (it != enemyPlayer_->characters.end()) {
-            enemyTeam_.push_back(BattleCharacter(
-                &it->second, battleId--));
-        }
-    }
-}
 
 // ==================== 回合流程 ====================
 void BattleManager::onRoundStart()
@@ -193,7 +204,8 @@ void BattleManager::onRoundEnd() {
     checkDeaths();
 }
 
-void BattleManager::calculateActionOrder() {
+void BattleManager::calculateActionOrder()
+{
     actionOrder_.clear();
     
     for (auto& ch : userTeam_) {
@@ -208,7 +220,7 @@ void BattleManager::calculateActionOrder() {
     }
     
     // 按速度降序排序
-    std::sort(actionOrder_.begin(), actionOrder_.end(),
+    sort(actionOrder_.begin(), actionOrder_.end(),
         [](BattleCharacter* a, BattleCharacter* b) {
             if (a->currentAttr.speed != b->currentAttr.speed) {
                 return a->currentAttr.speed > b->currentAttr.speed;
@@ -218,7 +230,7 @@ void BattleManager::calculateActionOrder() {
         });
 }
 
-// ==================== 行动执行 ====================
+// ==================== 行动执行（最核心战斗逻辑） ====================
 void BattleManager::executeAction(BattleCharacter* actor)
 {
     actor->hasActed = true;
@@ -260,15 +272,17 @@ void BattleManager::executeSkill(BattleCharacter* caster, Skill* skill)
     }
 }
 
+// ====================== 效果执行函数，最终都会调用这个函数 =======================
 void BattleManager::executeEffect(BattleCharacter* caster, const SkillEffect& effect, int skillId)
 {
     // 概率判定
     if (effect.chance < 100 && !rollChance(effect.chance)) {
+        log("  效果: " + getEffectName(effect.effect) + " 未触发");
         return;
     }
     
     // 获取目标
-    std::vector<BattleCharacter*> targets = getTargets(caster, effect.target);
+    vector<BattleCharacter*> targets = getTargets(caster, effect.target);
     if (targets.empty()) {
         return;
     }
@@ -286,35 +300,40 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
 {
     switch (effect.effect) {
         // ===== 即时伤害 =====
-        case EffectType::DAMAGE: {
+        case EffectType::DAMAGE: 
+        case EffectType::PIERCE: {
             int64_t damage = calculateDamage(caster, target, effect);
-            target->takeDamage(damage);
-            log("  - " + target->name + " 受到 " + std::to_string(damage) + " 点伤害 (剩余HP: " + std::to_string(target->currentAttr.hp) + ")");
+            target->takeDamage(damage, effect.effect != EffectType::PIERCE);
+            log("  - " + target->name + " 受到 " + to_string(damage) + " 点伤害 (剩余HP: " +
+                to_string(target->currentAttr.hp) + ")");
             triggerOnHit(target, caster);
             break;
         }
-        
+        case EffectType::TRUE_DAMAGE: {
+            int64_t damage = calculateTrueDamage(caster, target, effect);
+            target->takeDamage(damage, false);
+            log("  - " + target->name + " 受到 " + to_string(damage) + " 点真实伤害 (剩余HP: " +
+                to_string(target->currentAttr.hp) + ")");
+            triggerOnHit(target, caster);
+            break;
+        }
         // ===== 治疗 =====
         case EffectType::HEAL: {
             int64_t heal = calculateHeal(caster, target, effect);
             target->heal(heal);
-            log("  - " + target->name + " 恢复 " + std::to_string(heal) + " 点生命" +
-                " (当前HP: " + std::to_string(target->currentAttr.hp) + ")");
+            log("  - " + target->name + " 恢复 " + to_string(heal) + " 点生命" +
+                " (当前HP: " + to_string(target->currentAttr.hp) + ")");
             break;
         }
         
         // ===== 怒气操作 =====
-        case EffectType::RAGE_ADD: {
-            int amount = static_cast<int>(effect.value);
-            target->addRage(amount);
-            log("  - " + target->name + " 获得 " + std::to_string(amount) + " 点怒气");
-            break;
-        }
-        
+        case EffectType::RAGE_ADD:
         case EffectType::RAGE_REDUCE: {
             int amount = static_cast<int>(effect.value);
-            target->addRage(-amount);
-            log("  - " + target->name + " 减少 " + std::to_string(amount) + " 点怒气");
+            bool isAdd = (effect.effect == EffectType::RAGE_ADD);
+            string action = isAdd ? "获得" : "减少";
+            target->addRage(isAdd ? amount : -amount);
+            log("  - " + target->name + " " + action + " " + to_string(amount) + " 点怒气");
             break;
         }
         
@@ -324,8 +343,9 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
             target->addShield(shield);
             break;
         }
-        
         // ===== Buff效果 =====
+        case EffectType::BARRIER:
+        case EffectType::BUFF_MAX_HP:
         case EffectType::BUFF_ATK:
         case EffectType::BUFF_DEF:
         case EffectType::BUFF_SPEED:
@@ -333,22 +353,28 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::BUFF_CRIT_RESIST: 
         case EffectType::BUFF_HIT_RATE:
         case EffectType::BUFF_DODGE_RATE:
+        // ===== 持续BUFF =====
+        case EffectType::BUFF_REGEN:
         // ===== 控制效果 =====
         case EffectType::STUN:
         case EffectType::SILENCE:
-        case EffectType::FREEZE: {
+        case EffectType::FREEZE:
+        case EffectType::INJURY:
+        // ====== 特殊效果(todo:添加制定时机触发的技能，到时候移除) ======
+        case EffectType::LOCK_BLEED:  // 锁血
+        case EffectType::IMMUNITY:  // 免疫控制
+        case EffectType::INVINCIBLE: // 无敌
+        {
             target->addBuff(effect.effect, effect.value, effect.duration, skillId);
-            std::string buffName = getEffectName(effect.effect);
-            std::string sign = effect.value >= 0 ? "+" : "";
-            LOG_INFO(" %s 获得 %s %s%d (%d回合)", target->name.c_str(), buffName.c_str(), sign.c_str(), 
-                static_cast<int>(effect.value), effect.duration);
+            string buffName = getEffectName(effect.effect);
             break;
         }
         
         // ===== 持续伤害 =====
         case EffectType::POISON:
         case EffectType::BURN:
-        case EffectType::BLEED: {
+        case EffectType::BLEED:
+        case EffectType::CURSE: {
             int64_t dotDamage = calculateValue(caster, effect, target);
             target->addBuff(effect.effect, dotDamage, effect.duration, skillId);
             break;
@@ -359,8 +385,13 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
             target->addBuff(effect.effect, caster->battleId, effect.duration, skillId);
             break;
         }
+        // ====== 特殊效果2 todo：清除buff等 ======
         
-        // ===== 复活 =====
+        case EffectType::DISPEL: // 驱散
+        case EffectType::CLEANSE: // 净化
+        case EffectType::TRANSFER_DEBUFF: // Debuff转移
+        
+
         case EffectType::REVIVE: {
             // 复活需要特殊处理，目标选择时需要包含死亡单位
             if (!target->isAlive) {
@@ -403,8 +434,6 @@ int64_t BattleManager::calculateValue(BattleCharacter* caster, const SkillEffect
         }
         case ValueType::PERCENT_TARGET_HP:
             return target->currentAttr.maxHp * baseValue / 100;
-        case ValueType::PERCENT:
-            return baseValue; // 通用百分比，直接返回数值，调用处自行处理
         default:
             return baseValue;
     }
@@ -415,7 +444,7 @@ int64_t BattleManager::calculateDamage(BattleCharacter* caster, BattleCharacter*
 {
     // 1. 闪避判定
     int dodgeRate = target->currentAttr.dodgeRate - caster->currentAttr.hitRate;
-    dodgeRate = std::clamp(dodgeRate, 0, 50); // 闪避率最大50%，clamp将数值限制在指定的最小值和最大值之间
+    dodgeRate = clamp(dodgeRate, 0, 50);
     if (rollChance(dodgeRate)) {
         return 0;
     }
@@ -423,170 +452,149 @@ int64_t BattleManager::calculateDamage(BattleCharacter* caster, BattleCharacter*
     // 2. 基础伤害
     int64_t baseDamage = calculateValue(caster, effect, target);
     
-    // 3. 暴击判定
-    bool isCrit = false;
+    // 3. 防御减伤 (先扣防御)
+    int64_t defense = max(static_cast<int64_t>(0), target->currentAttr.def);
+    int64_t damage = max(static_cast<int64_t>(1), baseDamage - defense);
+    
+    // 4. 暴击判定 (对扣完防御后的伤害暴击)
     int critRate = caster->currentAttr.critRate - target->currentAttr.critResist;
-    critRate = std::clamp(critRate, 0, 100);
+    critRate = clamp(critRate, 0, 100);
     if (rollChance(critRate)) {
-        isCrit = true;
-        baseDamage = baseDamage * caster->currentAttr.critDamage / 100;
+        damage = damage * caster->currentAttr.critDamage / 100;
         LOG_INFO("  - 暴击！");
     }
-    
-    // 4. 防御减伤: 实际伤害 = 基础伤害 * 200 / (200 + 防御)
-    int64_t defense = std::max(static_cast<int64_t>(0), target->currentAttr.def);
-    int64_t damage = baseDamage - defense;
     
     // 5. 伤害加成/减免
     damage = damage * (100 + caster->currentAttr.damageBonus) / 100;
     damage = damage * (100 - target->currentAttr.damageReduction) / 100;
     
     // 6. 保底伤害
-    damage = std::max(static_cast<int64_t>(1), damage);
+    damage = max(static_cast<int64_t>(1), damage);
     
     return damage;
 }
+
 
 int64_t BattleManager::calculateHeal(BattleCharacter* caster, BattleCharacter* target,
      const SkillEffect& effect)
 {
     int64_t heal = calculateValue(caster, effect);
-    return std::max(static_cast<int64_t>(0), heal);
+    return max(static_cast<int64_t>(0), heal);
 }
 
 // ==================== 目标选择 ====================
-std::vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, TargetType type)
+vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, TargetType type)
 {
-    std::vector<BattleCharacter*> targets;
-    
-    std::vector<BattleCharacter>& allyTeam = caster->battleId > 0 ? userTeam_ : enemyTeam_;
-    std::vector<BattleCharacter>& enemyTeamRef = caster->battleId > 0 ? enemyTeam_ : userTeam_;
+    vector<BattleCharacter*> targets;
+    vector<BattleCharacter>& allyTeam = caster->battleId > 0 ? userTeam_ : enemyTeam_;
+    vector<BattleCharacter>& enemyTeamRef = caster->battleId > 0 ? enemyTeam_ : userTeam_;
+
+    // 检查嘲讽，如果为真则必须只攻击嘲讽者
+    for (const Buff& b : caster->buffs) {
+        if (b.type == EffectType::TAUNT) {
+            targets.push_back(unitMap[b.value]);
+            return targets;
+        }
+    }
     
     switch (type) {
         // ===== 基础目标 =====
         case TargetType::SELF:
-            targets.push_back(caster);
-            break;
+            return {caster};
             
-        case TargetType::ALLY_SINGLE: {
-            BattleCharacter* t = selectRandomAlive(allyTeam);
-            if (t) targets.push_back(t);
-            break;
-        }
+        case TargetType::ALLY_SINGLE:
+            return {selectRandomAlive(allyTeam)};
             
         case TargetType::ALLY_ALL:
             for (auto& ch : allyTeam) {
                 if (ch.isAlive) targets.push_back(&ch);
             }
-            break;
+            return targets;
             
         case TargetType::ENEMY_SINGLE: {
             BattleCharacter* t = selectEnemyTarget(caster, enemyTeamRef);
             if (t) targets.push_back(t);
-            break;
+            return targets;
         }
-            
+
         case TargetType::ENEMY_ALL:
             for (auto& ch : enemyTeamRef) {
                 if (ch.isAlive) targets.push_back(&ch);
             }
-            break;
+            return targets;
         
         // ===== 前后排 =====
         case TargetType::ALLY_FRONT_ROW:
             for (auto& ch : allyTeam) {
                 if (ch.isAlive && ch.isInFrontRow()) targets.push_back(&ch);
             }
-            break;
+            return targets;
             
         case TargetType::ALLY_BACK_ROW:
             for (auto& ch : allyTeam) {
                 if (ch.isAlive && !ch.isInFrontRow()) targets.push_back(&ch);
             }
-            break;
+            return targets;
             
         case TargetType::ENEMY_FRONT_ROW:
             for (auto& ch : enemyTeamRef) {
                 if (ch.isAlive && ch.isInFrontRow()) targets.push_back(&ch);
             }
-            break;
+            return targets;
             
         case TargetType::ENEMY_BACK_ROW:
             for (auto& ch : enemyTeamRef) {
                 if (ch.isAlive && !ch.isInFrontRow()) targets.push_back(&ch);
             }
-            break;
+            return targets;
         
         // ===== 按攻击力排序 =====
         case TargetType::ALLY_ATK_TOP1:
         case TargetType::ALLY_ATK_TOP2:
-        case TargetType::ALLY_ATK_TOP3: {
-            int count = static_cast<int>(type) - static_cast<int>(TargetType::ALLY_ATK_TOP1) + 1;
-            targets = selectByAttr(allyTeam, count, true, true);
-            break;
-        }
+        case TargetType::ALLY_ATK_TOP3:
+            return selectByAttr(allyTeam, type, TargetType::ALLY_ATK_TOP1, true, true);
         
         case TargetType::ENEMY_ATK_TOP1:
         case TargetType::ENEMY_ATK_TOP2:
-        case TargetType::ENEMY_ATK_TOP3: {
-            int count = static_cast<int>(type) - static_cast<int>(TargetType::ENEMY_ATK_TOP1) + 1;
-            targets = selectByAttr(enemyTeamRef, count, true, true);
-            break;
-        }
+        case TargetType::ENEMY_ATK_TOP3:
+            return selectByAttr(enemyTeamRef, type, TargetType::ENEMY_ATK_TOP1, true, true);
         
         // ===== 按血量排序 =====
         case TargetType::ALLY_HP_LOW1:
         case TargetType::ALLY_HP_LOW2:
-        case TargetType::ALLY_HP_LOW3: {
-            int count = static_cast<int>(type) - static_cast<int>(TargetType::ALLY_HP_LOW1) + 1;
-            targets = selectByAttr(allyTeam, count, false, false);
-            break;
-        }
+        case TargetType::ALLY_HP_LOW3:
+            return selectByAttr(allyTeam, type, TargetType::ALLY_HP_LOW1, false, false);
         
         case TargetType::ENEMY_HP_LOW1:
         case TargetType::ENEMY_HP_LOW2:
-        case TargetType::ENEMY_HP_LOW3: {
-            int count = static_cast<int>(type) - static_cast<int>(TargetType::ENEMY_HP_LOW1) + 1;
-            targets = selectByAttr(enemyTeamRef, count, false, false);
-            break;
-        }
+        case TargetType::ENEMY_HP_LOW3:
+            return selectByAttr(enemyTeamRef, type, TargetType::ENEMY_HP_LOW1, false, false);
         
         // ===== 随机目标 =====
         case TargetType::ALLY_RANDOM_1:
         case TargetType::ALLY_RANDOM_2:
         case TargetType::ALLY_RANDOM_3: {
             int count = static_cast<int>(type) - static_cast<int>(TargetType::ALLY_RANDOM_1) + 1;
-            targets = selectRandom(allyTeam, count);
-            break;
+            return selectRandom(allyTeam, count);
         }
         
         case TargetType::ENEMY_RANDOM_1:
         case TargetType::ENEMY_RANDOM_2:
         case TargetType::ENEMY_RANDOM_3: {
             int count = static_cast<int>(type) - static_cast<int>(TargetType::ENEMY_RANDOM_1) + 1;
-            targets = selectRandom(enemyTeamRef, count);
-            break;
+            return selectRandom(enemyTeamRef, count);
         }
         
         default:
-            break;
+            return {nullptr};
     }
     
     return targets;
 }
 
 BattleCharacter* BattleManager::selectEnemyTarget(BattleCharacter* caster,
-                                                   std::vector<BattleCharacter>& enemies) {
-    // 检查嘲讽，如果为真则必须只攻击嘲讽者
-    for (const Buff& b : caster->buffs) {
-        if (b.type == EffectType::TAUNT) {
-            for (auto& ch : enemies) {
-                if (ch.battleId == b.value && ch.isAlive) {
-                    return &ch;
-                }
-            }
-        }
-    }
+    vector<BattleCharacter>& enemies)
+{
     // 优先选择同Id的敌人，否则随机
     if (enemies[abs(caster->battleId)].isAlive) {
         return &enemies[abs(caster->battleId)];
@@ -594,13 +602,12 @@ BattleCharacter* BattleManager::selectEnemyTarget(BattleCharacter* caster,
         return selectRandomAlive(enemies);
     }
     
-    
     return nullptr;
 }
 
-BattleCharacter* BattleManager::selectRandomAlive(std::vector<BattleCharacter>& team)
+BattleCharacter* BattleManager::selectRandomAlive(vector<BattleCharacter>& team)
 {
-    std::vector<BattleCharacter*> alive;
+    vector<BattleCharacter*> alive;
     for (auto& ch : team) {
         if (ch.isAlive) {
             alive.push_back(&ch);
@@ -611,13 +618,14 @@ BattleCharacter* BattleManager::selectRandomAlive(std::vector<BattleCharacter>& 
         return nullptr;
     }
     
-    std::uniform_int_distribution<size_t> dist(0, alive.size() - 1);
+    uniform_int_distribution<size_t> dist(0, alive.size() - 1);
     return alive[dist(rng_)];
 }
 
-std::vector<BattleCharacter*> BattleManager::selectRandom(std::vector<BattleCharacter>& team, 
-                                                           int count) {
-    std::vector<BattleCharacter*> alive;
+vector<BattleCharacter*> BattleManager::selectRandom(vector<BattleCharacter>& team, 
+    int count)
+{
+    vector<BattleCharacter*> alive;
     for (auto& ch : team) {
         if (ch.isAlive) {
             alive.push_back(&ch);
@@ -625,7 +633,7 @@ std::vector<BattleCharacter*> BattleManager::selectRandom(std::vector<BattleChar
     }
     
     // 打乱顺序
-    std::shuffle(alive.begin(), alive.end(), rng_);
+    shuffle(alive.begin(), alive.end(), rng_);
     
     // 截取指定数量
     if (static_cast<int>(alive.size()) > count) {
@@ -635,10 +643,11 @@ std::vector<BattleCharacter*> BattleManager::selectRandom(std::vector<BattleChar
     return alive;
 }
 
-std::vector<BattleCharacter*> BattleManager::selectByAttr(std::vector<BattleCharacter>& team,
-    int count, bool byAtk, bool highest)
+vector<BattleCharacter*> BattleManager::selectByAttr(vector<BattleCharacter>& team,
+    TargetType now, TargetType base, bool byAtk, bool highest)
 {
-    std::vector<BattleCharacter*> alive;
+    int count = static_cast<int>(now) - static_cast<int>(base) + 1;
+    vector<BattleCharacter*> alive;
     for (auto& ch : team) {
         if (ch.isAlive) {
             alive.push_back(&ch);
@@ -647,7 +656,7 @@ std::vector<BattleCharacter*> BattleManager::selectByAttr(std::vector<BattleChar
     
     // 排序
     if (byAtk) {
-        std::sort(alive.begin(), alive.end(),
+        sort(alive.begin(), alive.end(),
             [highest](BattleCharacter* a, BattleCharacter* b) {
                 return highest ? 
                     (a->currentAttr.atk > b->currentAttr.atk) :
@@ -655,7 +664,7 @@ std::vector<BattleCharacter*> BattleManager::selectByAttr(std::vector<BattleChar
             });
     } else {
         // 按当前HP排序
-        std::sort(alive.begin(), alive.end(),
+        sort(alive.begin(), alive.end(),
             [highest](BattleCharacter* a, BattleCharacter* b) {
                 return highest ? 
                     (a->currentAttr.hp > b->currentAttr.hp) :
@@ -672,37 +681,32 @@ std::vector<BattleCharacter*> BattleManager::selectByAttr(std::vector<BattleChar
 }
 
 // ==================== 技能触发 ====================
-void BattleManager::triggerSkills(SkillTrigger trigger) {
+void BattleManager::triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter)
+{
     // 收集所有存活角色
-    std::vector<BattleCharacter*> allChars;
-    
-    for (auto& ch : userTeam_) {
-        if (ch.isAlive) {
-            allChars.push_back(&ch);
+    vector<BattleCharacter*> allChars;
+    if (specificCharacter) {
+        if (specificCharacter->isAlive) allChars.push_back(specificCharacter);
+    } else {
+        for (auto& ch : userTeam_) {
+            if (ch.isAlive) allChars.push_back(&ch);
         }
-    }
-    for (auto& ch : enemyTeam_) {
-        if (ch.isAlive) {
-            allChars.push_back(&ch);
+        for (auto& ch : enemyTeam_) {
+            if (ch.isAlive) allChars.push_back(&ch);
         }
     }
     
     // 按速度排序（速度高的先触发）
-    std::sort(allChars.begin(), allChars.end(),
+    sort(allChars.begin(), allChars.end(),
         [](BattleCharacter* a, BattleCharacter* b) {
             return a->currentAttr.speed > b->currentAttr.speed;
         });
     
     // 依次检查并触发技能
     for (BattleCharacter* ch : allChars) {
-        if (!ch->isAlive) {
-            continue;
-        }
-        
         Skill* skill = ch->getSkill(trigger);
         if (skill && skill->id != 0) {
-            LOG_INFO("%s 触发 [%s]", ch->name.c_str(), skill->name.c_str());
-            
+            log(ch->name + "触发技能: " + skill->name);
             for (const SkillEffect& effect : skill->effects) {
                 executeEffect(ch, effect, skill->id);
             }
@@ -762,7 +766,8 @@ void BattleManager::triggerOnDeath(BattleCharacter* character)
 }
 
 // ==================== 状态检查 ====================
-BattleManager::Result BattleManager::checkBattleResult() {
+BattleManager::Result BattleManager::checkBattleResult()
+{
     bool userAlive = isTeamAlive(userTeam_);
     bool enemyAlive = isTeamAlive(enemyTeam_);
     
@@ -779,14 +784,15 @@ BattleManager::Result BattleManager::checkBattleResult() {
     return Result::ONGOING;
 }
 
-void BattleManager::checkDeaths() {
+void BattleManager::checkDeaths()
+{
     // 检查己方死亡
     for (auto& ch : userTeam_) {
         if (ch.currentAttr.hp <= 0 && ch.isAlive) {
             ch.isAlive = false;
             ch.currentAttr.hp = 0;
             LOG_INFO("%s 阵亡！", ch.name.c_str());
-            triggerOnDeath(&ch);
+            triggerOnDeath(&ch); // todo：阵亡技能时机调整
         }
     }
     
@@ -800,7 +806,8 @@ void BattleManager::checkDeaths() {
     }
 }
 
-bool BattleManager::isTeamAlive(const std::vector<BattleCharacter>& team) const {
+bool BattleManager::isTeamAlive(const vector<BattleCharacter>& team) const
+{
     for (const auto& ch : team) {
         if (ch.isAlive) {
             return true;
@@ -809,7 +816,8 @@ bool BattleManager::isTeamAlive(const std::vector<BattleCharacter>& team) const 
     return false;
 }
 
-int BattleManager::countAlive(const std::vector<BattleCharacter>& team) const {
+int BattleManager::countAlive(const vector<BattleCharacter>& team) const
+{
     int count = 0;
     for (const auto& ch : team) {
         if (ch.isAlive) {
@@ -821,7 +829,7 @@ int BattleManager::countAlive(const std::vector<BattleCharacter>& team) const {
 
 // ==================== 工具函数 ====================
 
-std::string BattleManager::getEffectName(EffectType type) const {
+string BattleManager::getEffectName(EffectType type) const {
     switch (type) {
         case EffectType::DAMAGE:        return "伤害";
         case EffectType::HEAL:          return "治疗";
@@ -850,11 +858,37 @@ bool BattleManager::rollChance(int percent) {
     if (percent <= 0) return false;
     if (percent >= 100) return true;
     
-    std::uniform_int_distribution<int> dist(1, 100);
+    uniform_int_distribution<int> dist(1, 100);
     return dist(rng_) <= percent;
 }
 
 void BattleManager::setLogCallback(LogCallback callback)
 {
     logCallback_ = callback;
+}
+
+int64_t BattleManager::calculateTrueDamage(BattleCharacter* caster, BattleCharacter* target,
+    const SkillEffect& effect)
+{
+    // 1. 闪避判定
+    int dodgeRate = target->currentAttr.dodgeRate - caster->currentAttr.hitRate;
+    dodgeRate = clamp(dodgeRate, 0, 50);
+    if (rollChance(dodgeRate)) {
+        return 0;
+    }
+
+    // 2. 基础伤害
+    int64_t baseDamage = calculateValue(caster, effect, target);
+    int critRate = caster->currentAttr.critRate - target->currentAttr.critResist;
+    critRate = clamp(critRate, 0, 100);
+    if (rollChance(critRate)) {
+        baseDamage = baseDamage * caster->currentAttr.critDamage / 100;
+        LOG_INFO("  - 真伤暴击！");
+    }
+
+    // 5. 伤害加成/减免
+    baseDamage = baseDamage * (100 + caster->currentAttr.damageBonus) / 100;
+    baseDamage = baseDamage * (100 - target->currentAttr.damageReduction) / 100;
+
+    return max(static_cast<int64_t>(1), baseDamage);
 }

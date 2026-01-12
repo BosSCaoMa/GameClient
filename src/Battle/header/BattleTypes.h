@@ -47,7 +47,6 @@ enum class TargetType {
 // ==================== 数值计算类型 ====================
 enum class ValueType {
     FIXED = 0,          // 固定值
-    PERCENT,            // 百分比（通用）
     PERCENT_ATK,        // 攻击力百分比
     PERCENT_DEF,        // 防御力百分比
     PERCENT_MAX_HP,     // 最大生命值百分比
@@ -67,9 +66,11 @@ enum class EffectType {
     HEAL,               // 治疗
     RAGE_ADD,           // 增加怒气
     RAGE_REDUCE,        // 减少怒气
-    PIERCE,             // 穿透（伤害无视护盾/部分减伤，新增）
 
-
+    // 护盾
+    SHIELD,             // 护盾
+    BARRIER,            // 屏障（免疫单次控制效果，新增）
+    
     // 属性Buff
     BUFF_MAX_HP,        // 最大生命值加成
     BUFF_ATK,           // 攻击力加成
@@ -101,10 +102,6 @@ enum class EffectType {
 
     DEBUFF_END,
     // ================负面效果结束=====================
-
-    // 护盾
-    SHIELD,             // 护盾
-    BARRIER,            // 屏障（免疫单次控制效果，新增）
 
     // 特殊
     LOCK_BLEED,         // 锁血（生命值不会低于1）
@@ -150,7 +147,7 @@ enum class SkillTrigger
     ON_DODGE,        // 闪避攻击时
     ON_KILL,         // 击杀敌人
     // 血量/状态触发
-
+    ON_LOW_HP,      // 低生命触发
     ON_CONTROL, // 受到控制效果时
     ON_DEATH,  // 阵亡技能
 

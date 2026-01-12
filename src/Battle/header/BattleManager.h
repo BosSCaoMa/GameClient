@@ -52,6 +52,7 @@ public:
 private:
     // ==================== 初始化 ====================
     void initBattle();
+    void buildUnitMap();
     void createBattleCharacters();
     
     // ==================== 回合流程 ====================
@@ -71,6 +72,8 @@ private:
                            BattleCharacter* target = nullptr);
     int64_t calculateDamage(BattleCharacter* caster, BattleCharacter* target, 
                             const SkillEffect& effect);
+    int64_t calculateTrueDamage(BattleCharacter* caster, BattleCharacter* target,
+                               const SkillEffect& effect);
     int64_t calculateHeal(BattleCharacter* caster, BattleCharacter* target,
                           const SkillEffect& effect);
     
@@ -80,11 +83,11 @@ private:
                                         std::vector<BattleCharacter>& enemies);
     BattleCharacter* selectRandomAlive(std::vector<BattleCharacter>& team);
     std::vector<BattleCharacter*> selectRandom(std::vector<BattleCharacter>& team, int count);
-    std::vector<BattleCharacter*> selectByAttr(std::vector<BattleCharacter>& team, 
-                                                int count, bool byAtk, bool highest);
+    std::vector<BattleCharacter*> selectByAttr(std::vector<BattleCharacter>& team, TargetType now,
+        TargetType base, bool byAtk, bool highest);
     
     // ==================== 技能触发 ====================
-    void triggerSkills(SkillTrigger trigger);
+    void triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter = nullptr);
     void triggerOnHit(BattleCharacter* defender, BattleCharacter* attacker);
     void triggerOnLowHp(BattleCharacter* character);
     void triggerOnDeath(BattleCharacter* character);
@@ -111,7 +114,7 @@ private:
     // 战斗队伍（副本）
     std::vector<BattleCharacter> userTeam_;
     std::vector<BattleCharacter> enemyTeam_;
-    
+    std::unordered_map<int, BattleCharacter*> unitMap;
     // 行动顺序
     std::vector<BattleCharacter*> actionOrder_;
     
