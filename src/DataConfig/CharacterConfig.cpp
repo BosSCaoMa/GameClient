@@ -24,10 +24,7 @@ Character CharacterConfig::create(int charId, int level, int star, int breakthro
     for (size_t i = 0; i < tmpl->skillIds.size(); ++i) {
         int skillId = tmpl->skillIds[i];
         Skill aSkill = GET_SKILL(skillId);
-        if (aSkill.id != 0) { // 确保技能存在
-            SkillTrigger trigger = static_cast<SkillTrigger>(i); // 按顺序映射触发类型
-            ch.setSkill(trigger, aSkill);
-        }
+        ch.setSkill(aSkill);
     }
     
     return ch;

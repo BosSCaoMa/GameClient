@@ -53,6 +53,14 @@ public:
     void addRage(int amount);
     
     void addShield(int64_t amount);
+
+    int dispelBuffs(int count);
+
+    int cleanseDebuffs(int count);
+
+    int transferDebuffsTo(BattleCharacter* target, int count);
+
+    bool BuffIsOffset(EffectType type) const;
     
     // ==================== 技能相关 ====================
     Skill* getSkill(SkillTrigger trigger);
@@ -60,4 +68,19 @@ public:
     Skill* getNormalAttack();
     
     Skill* getRageSkill();
+
+private:
+    bool hasBuffOfType(EffectType type) const;
+
+    bool hasInjury() const;
+
+    bool hasLockBleed() const;
+
+    bool hasControlImmunity() const;
+
+    bool isInvincible() const;
+
+    int removeBuffsInternal(bool removeDebuff, int count);
+
+    int removeBuffsByType(EffectType type, int count = 1);
 };

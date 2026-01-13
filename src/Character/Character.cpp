@@ -17,8 +17,11 @@ Character::Character(int id_, const std::string& name_, int level_, int star_)
 }
 
 // ==================== 技能管理 ====================
-void Character::setSkill(SkillTrigger trigger, const Skill& skill) {
-    skills[trigger] = skill;
+void Character::setSkill(const Skill& skill) {
+    if (skill.id == 0) {
+        return;
+    }
+    skills[skill.trigger] = skill;
 }
 
 const Skill* Character::getSkill(SkillTrigger trigger) const {
@@ -38,13 +41,18 @@ void Character::equipItem(const Equipment& equip)
     
     // 装备新装备
     equipments[equip.type] = equip;
-    
+    setSkill(GET_SKILL(equip.skillId));
     // 重新计算属性
     recalculateAttr();
 }
 
 void Character::unequipItem(EquipmentType type) {
     equipments.erase(type);
+    for (auto it = skills.begin(); it != skills.end(); ++it) {
+        if (it->second.id == equipments[type].skillId) {
+            it = skills.erase(it);
+        }
+    }
     recalculateAttr();
 }
 

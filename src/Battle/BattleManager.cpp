@@ -359,14 +359,13 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::STUN:
         case EffectType::SILENCE:
         case EffectType::FREEZE:
+        // ====== 特殊状态 ======
         case EffectType::INJURY:
-        // ====== 特殊效果(todo:添加制定时机触发的技能，到时候移除) ======
-        case EffectType::LOCK_BLEED:  // 锁血
-        case EffectType::IMMUNITY:  // 免疫控制
-        case EffectType::INVINCIBLE: // 无敌
-        {
+        case EffectType::LOCK_BLEED:
+        case EffectType::IMMUNITY:
+        case EffectType::INVINCIBLE: {
             target->addBuff(effect.effect, effect.value, effect.duration, skillId);
-            string buffName = getEffectName(effect.effect);
+            log("  - " + target->name + " 获得状态 " + getEffectName(effect.effect));
             break;
         }
         
@@ -385,12 +384,35 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
             target->addBuff(effect.effect, caster->battleId, effect.duration, skillId);
             break;
         }
-        // ====== 特殊效果2 todo：清除buff等 ======
         
-        case EffectType::DISPEL: // 驱散
-        case EffectType::CLEANSE: // 净化
-        case EffectType::TRANSFER_DEBUFF: // Debuff转移
-        
+        // ====== 特殊效果2：清除/转移 ======
+        case EffectType::DISPEL: {
+            int limit = static_cast<int>(effect.value);
+            int removed = target->dispelBuffs(limit);
+            string msg = removed > 0 ?
+                ("  - " + target->name + " 被驱散 " + to_string(removed) + " 个增益") :
+                ("  - " + target->name + " 没有可驱散的增益");
+            log(msg);
+            break;
+        }
+        case EffectType::CLEANSE: {
+            int limit = static_cast<int>(effect.value);
+            int removed = target->cleanseDebuffs(limit);
+            string msg = removed > 0 ?
+                ("  - " + target->name + " 净化 " + to_string(removed) + " 个负面状态") :
+                ("  - " + target->name + " 没有可净化的负面状态");
+            log(msg);
+            break;
+        }
+        case EffectType::TRANSFER_DEBUFF: {
+            int limit = static_cast<int>(effect.value);
+            int moved = caster->transferDebuffsTo(target, limit);
+            string msg = moved > 0 ?
+                ("  - " + caster->name + " 将 " + to_string(moved) + " 个负面状态转移给 " + target->name) :
+                ("  - " + caster->name + " 没有可转移的负面状态");
+            log(msg);
+            break;
+        }
 
         case EffectType::REVIVE: {
             // 复活需要特殊处理，目标选择时需要包含死亡单位
@@ -792,7 +814,7 @@ void BattleManager::checkDeaths()
             ch.isAlive = false;
             ch.currentAttr.hp = 0;
             LOG_INFO("%s 阵亡！", ch.name.c_str());
-            triggerOnDeath(&ch); // todo：阵亡技能时机调整
+            triggerOnDeath(&ch);
         }
     }
     
@@ -840,6 +862,8 @@ string BattleManager::getEffectName(EffectType type) const {
         case EffectType::BUFF_SPEED:    return "速度";
         case EffectType::BUFF_CRIT_RATE: return "暴击率";
         case EffectType::BUFF_CRIT_RESIST: return "抗暴率";
+        case EffectType::BARRIER:       return "屏障";
+        case EffectType::BUFF_REGEN:    return "持续治疗";
         // 补充于此
         case EffectType::STUN:          return "眩晕";
         case EffectType::SILENCE:       return "沉默";
@@ -847,8 +871,16 @@ string BattleManager::getEffectName(EffectType type) const {
         case EffectType::POISON:        return "中毒";
         case EffectType::BURN:          return "灼烧";
         case EffectType::BLEED:         return "流血";
+        case EffectType::CURSE:         return "诅咒";
         case EffectType::SHIELD:        return "护盾";
         case EffectType::TAUNT:         return "嘲讽";
+        case EffectType::INJURY:        return "重伤";
+        case EffectType::LOCK_BLEED:    return "锁血";
+        case EffectType::IMMUNITY:      return "免疫控制";
+        case EffectType::INVINCIBLE:    return "无敌";
+        case EffectType::DISPEL:        return "驱散";
+        case EffectType::CLEANSE:       return "净化";
+        case EffectType::TRANSFER_DEBUFF: return "负面转移";
         case EffectType::REVIVE:        return "复活";
         default:                        return "未知效果";
     }

@@ -3,7 +3,7 @@
 
 // ==================== 战斗属性（使用明确命名，避免魔法索引） ====================
 // BattleAttr.h
-struct BattleAttr {
+struct BattleAttr {   // 相互关联 【 AffixType applyAffix 】 【 EffectType applyEffect 】【 BattleAttr 】
     // 基础属性
     int64_t hp = 100;
     int64_t maxHp = 100;
@@ -26,14 +26,19 @@ struct BattleAttr {
     
     int16_t lifesteal = 0;          // 吸血 (百分比)
     int16_t counterRate = 0;        // 反击率 (百分比)
-    int16_t rageGain = 100;         // 怒气获取 (百分比，默认100%)
     int16_t mutiHitRate = 0;       // 连击概率 (百分比)
     int16_t healBonus = 0;          // 治疗加成 (百分比)
     
     // 抗性
-    int16_t stunResist = 0;         // 眩晕抗性 (百分比)
-    int16_t silenceResist = 0;      // 沉默抗性
-    int16_t poisonResist = 0;       // 中毒抗性
+    int16_t burnResist = 0;        // 灼烧抗性 (百分比免疫)
+    int16_t freezeResist = 0;      // 冰冻抗性 (百分比免疫)
+    int16_t stunResist = 0;         // 眩晕抗性 (百分比免疫)
+    int16_t silenceResist = 0;      // 沉默抗性 (百分比免疫)
+    int16_t poisonResist = 0;       // 中毒抗性 (百分比免疫)
+    int16_t tauntResist = 0;        // 嘲讽抗性 (百分比免疫)
+    int16_t injuryResist = 0;      // 受伤抗性 (百分比免疫)
+    int16_t bleedResist = 0;        // 流血抗性 (百分比免疫)
+    int16_t curseResist = 0;        // 诅咒抗性 (百分比免疫)
     
     BattleAttr() = default;
     
@@ -63,14 +68,19 @@ struct BattleAttr {
         
         lifesteal += other.lifesteal;
         counterRate += other.counterRate;
-        rageGain += other.rageGain;
         healBonus += other.healBonus;
         mutiHitRate += other.mutiHitRate;
 
+        burnResist += other.burnResist;
         stunResist += other.stunResist;
         silenceResist += other.silenceResist;
         poisonResist += other.poisonResist;
-        
+        tauntResist += other.tauntResist;
+        injuryResist += other.injuryResist;
+        bleedResist += other.bleedResist;
+        curseResist += other.curseResist;
+        freezeResist += other.freezeResist;
+
         return *this;
     }
 };

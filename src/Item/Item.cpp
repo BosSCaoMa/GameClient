@@ -8,7 +8,9 @@ BattleAttr Equipment::calculateTotalAttr(const BattleAttr& charAttr) const {
     BattleAttr total = charAttr;
     
     // 2. 应用主词缀
-    applyAffix(total, charAttr, mainAffix);
+    for (const auto& mainAffix : mainAffixs) {
+        applyAffix(total, charAttr, mainAffix);
+    }
     
     // 3. 应用所有副词缀
     for (const auto& affix : subAffixes) {
@@ -80,7 +82,6 @@ void Equipment::applyAffix(BattleAttr& total, const BattleAttr& charAttr, const 
         
         // ========== 伤害加成 ==========
         case AffixType::DAMAGE_BONUS:
-            // 存储在扩展属性中（如果需要）
             total.damageBonus += affix.value;
             break;
         
@@ -101,10 +102,6 @@ void Equipment::applyAffix(BattleAttr& total, const BattleAttr& charAttr, const 
             total.counterRate += affix.value;
             break;
         
-        case AffixType::RAGE_GAIN:
-            total.rageGain += affix.value;
-            break;
-        
         case AffixType::MULTI_HIT_RATE:
             total.mutiHitRate += affix.value;
             break;
@@ -114,6 +111,10 @@ void Equipment::applyAffix(BattleAttr& total, const BattleAttr& charAttr, const 
             break;
         
         // ========== 抗性 ==========
+        case AffixType::BURN_RESIST:
+            total.burnResist += affix.value;
+            break;
+
         case AffixType::STUN_RESIST:
             total.stunResist += affix.value;
             break;
@@ -125,7 +126,27 @@ void Equipment::applyAffix(BattleAttr& total, const BattleAttr& charAttr, const 
         case AffixType::POISON_RESIST:
             total.poisonResist += affix.value;
             break;
+
+        case AffixType::FREEZE_RESIST:
+            total.freezeResist += affix.value;
+            break;
+
+        case AffixType::TAUNT_RESIST:
+            total.tauntResist += affix.value;
+            break;
+
+        case AffixType::INJURY_RESIST:
+            total.injuryResist += affix.value;
+            break;
+
+        case AffixType::BLEED_RESIST:
+            total.bleedResist += affix.value;
+            break;
         
+        case AffixType::CURSE_RESIST:
+            total.curseResist += affix.value;
+            break;
+            
         default:
             break;
     }
@@ -183,9 +204,6 @@ std::string EquipmentAffix::getDescription() const {
             break;
         case AffixType::COUNTER_RATE:
             oss << "反击率 +" << value << "%";
-            break;
-        case AffixType::RAGE_GAIN:
-            oss << "怒气获取 +" << value << "%";
             break;
         case AffixType::HEAL_BONUS:
             oss << "治疗加成 +" << value << "%";

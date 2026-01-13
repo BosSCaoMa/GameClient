@@ -83,14 +83,13 @@ enum class EffectType {
 
     // 持续BUFF
     BUFF_REGEN,         // 持续回血
-    BUFF_IMMUNITY,      // 霸体（免疫控制效果）
 
     // ================负面效果开始====================
     // 控制
     DEBUFF_BEGIN,
     STUN,               // 眩晕（无法行动）
-    SILENCE,            // 沉默（无法释放技能，只能普攻）
     FREEZE,             // 冰冻（无法行动，受到伤害解除）
+    SILENCE,            // 沉默（无法释放技能，只能普攻）
     TAUNT,              // 嘲讽（强制攻击释放者）
     INJURY,             // 受伤（无法回血）
     
@@ -125,6 +124,14 @@ bool IsDebuff(EffectType type, int64_t value)
         return true;
     }
     return value < 0;
+}
+
+inline bool IsControlEffect(EffectType type)
+{
+    return type == EffectType::STUN ||
+        type == EffectType::SILENCE ||
+        type == EffectType::FREEZE ||
+        type == EffectType::TAUNT;
 }
 
 // ==================== 技能触发时机 ====================

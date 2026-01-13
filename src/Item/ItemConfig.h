@@ -34,20 +34,17 @@ struct EquipmentTemplate {
     std::string name;
     EquipmentType type;
     EquipmentQuality quality;
-    int level;
-    
-    AffixType mainAffixType;
-    int mainAffixMin;
-    int mainAffixMax;
-    std::vector<int> skillIds;
+
+    std::vector<EquipmentAffix> mainAffixs;
+    int skillId;
     
     int setId;
     
     EquipmentTemplate() = default;
     EquipmentTemplate(int id, const std::string& name_, EquipmentType type_, 
-        EquipmentQuality quality_, int level_ = 1, int setId_ = 0)
-        : id(id), name(name_), type(type_), quality(quality_), level(level_)
-        , mainAffixType(AffixType::NONE), setId(setId_) {}
+        EquipmentQuality quality_, int skillId_ = 0, int setId_ = 0)
+        : id(id), name(name_), type(type_), quality(quality_)
+        , skillId(skillId_), setId(setId_) {}
 };
 
 // ==================== 物品配置管理器 ====================
@@ -75,7 +72,7 @@ public:
     }
     
     // 创建装备实例（随机词缀）
-    Equipment createEquipment(int equipId, int level = 1) const;
+    Equipment createEquipment(int equipId) const;
     
     // 注册
     void regItem(const ItemTemplate& tmpl) { items_[tmpl.id] = tmpl; }
@@ -115,4 +112,4 @@ private:
 };
 
 #define GET_ITEM(id) ItemConfig::instance().getItem(id)
-#define CREATE_EQUIP(id, lv) ItemConfig::instance().createEquipment(id, lv)
+#define CREATE_EQUIP(id) ItemConfig::instance().createEquipment(id)

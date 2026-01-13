@@ -3,7 +3,7 @@
 #include "LogM.h"
 
 // ==================== 创建装备实例 ====================
-Equipment ItemConfig::createEquipment(int equipId, int level) const
+Equipment ItemConfig::createEquipment(int equipId) const
 {
     const auto* tmpl = getEquipment(equipId);
     if (!tmpl) {
@@ -11,15 +11,14 @@ Equipment ItemConfig::createEquipment(int equipId, int level) const
         return Equipment();
     }
     
-    Equipment equip(tmpl->id, tmpl->name, tmpl->type, tmpl->quality, level);
-    equip.setId = tmpl->setId;
-    
+    // 生成主词缀
+    Equipment equip(tmpl->id, tmpl->name, tmpl->type, tmpl->quality, tmpl->skillId, tmpl->setId);
+    for (const auto& affix : tmpl->mainAffixs) {
+        equip.mainAffixs.push_back(affix);
+    }
     // 随机器
     std::random_device rd;  // 随机数种子（硬件随机数）
     std::mt19937 gen(rd());  // 梅森旋转算法随机数生成器
-    
-    // 生成主词缀
-    equip.mainAffix = {tmpl->mainAffixType, tmpl->mainAffixMin};
     
     // 根据品质生成副词缀
     int subAffixCount = static_cast<int>(tmpl->quality) - 2;  // 蓝装1个, 紫装2个, 橙装3个, 红装4个
@@ -166,25 +165,19 @@ void ItemConfig::initWeapons()
     // ===== 武器 (20001-20999) =====
     {
         EquipmentTemplate tmpl(20001, "青铜剑", ET::WEAPON, EQ::WHITE);
-        tmpl.mainAffixType = AT::ATK_FLAT;
-        tmpl.mainAffixMin = 20;
-        tmpl.mainAffixMax = 40;
+        tmpl.mainAffixs.push_back({AT::ATK_FLAT, 20});
         regEquipment(tmpl);
     }
     
     {
         EquipmentTemplate tmpl(20002, "铁剑", ET::WEAPON, EQ::GREEN);
-        tmpl.mainAffixType = AT::ATK_FLAT;
-        tmpl.mainAffixMin = 50;
-        tmpl.mainAffixMax = 80;
+        tmpl.mainAffixs.push_back({AT::ATK_FLAT, 50});
         regEquipment(tmpl);
     }
     
     {
         EquipmentTemplate tmpl(20003, "青龙偃月刀", ET::WEAPON, EQ::ORANGE);
-        tmpl.mainAffixType = AT::ATK_PERCENT;
-        tmpl.mainAffixMin = 15;
-        tmpl.mainAffixMax = 25;
+        tmpl.mainAffixs.push_back({AT::ATK_PERCENT, 15});
         tmpl.setId = 1001;  // 蜀国套装
         regEquipment(tmpl);
     }
@@ -194,17 +187,13 @@ void ItemConfig::initArmors() {
     // ===== 盔甲 (21001-21999) =====
     {
         EquipmentTemplate tmpl(21001, "布衣", ET::ARMOR, EQ::WHITE); 
-        tmpl.mainAffixType = AT::HP_FLAT;
-        tmpl.mainAffixMin = 100;
-        tmpl.mainAffixMax = 200;
+        tmpl.mainAffixs.push_back({AT::HP_FLAT, 100});
         regEquipment(tmpl);
     }
     
     {
         EquipmentTemplate tmpl(21002, "铁甲", ET::ARMOR, EQ::BLUE);
-        tmpl.mainAffixType = AT::DEF_PERCENT;
-        tmpl.mainAffixMin = 10;
-        tmpl.mainAffixMax = 20;
+        tmpl.mainAffixs.push_back({AT::DEF_PERCENT, 10});
         regEquipment(tmpl);
     }
 }
@@ -213,9 +202,7 @@ void ItemConfig::initHelmets()
 {
     // ===== 头盔 (22001-22999) =====
     EquipmentTemplate tmpl(22001, "铁盔", ET::HELMET, EQ::GREEN);
-    tmpl.mainAffixType = AT::HP_PERCENT;
-    tmpl.mainAffixMin = 8;
-    tmpl.mainAffixMax = 15;
+    tmpl.mainAffixs.push_back({AT::HP_PERCENT, 8});
     regEquipment(tmpl);
 }
 
@@ -223,9 +210,7 @@ void ItemConfig::initBoots()
 {
     // ===== 鞋子 (23001-23999) =====
     EquipmentTemplate tmpl(23001, "疾风靴", ET::BOOTS, EQ::BLUE);
-    tmpl.mainAffixType = AT::SPEED_FLAT;
-    tmpl.mainAffixMin = 5;
-    tmpl.mainAffixMax = 10;
+    tmpl.mainAffixs.push_back({AT::SPEED_FLAT, 5});
     regEquipment(tmpl);
 }
 

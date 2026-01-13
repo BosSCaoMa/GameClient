@@ -38,7 +38,7 @@ public:
     Character(int id_, const std::string& name_, int level_ = 1, int star_ = 1);
     
     // ==================== 技能管理 ====================
-    void setSkill(SkillTrigger trigger, const Skill& skill);
+    void setSkill(const Skill& skill);
     const Skill* getSkill(SkillTrigger trigger) const;
     bool hasSkill(SkillTrigger trigger) const;
     

@@ -64,15 +64,20 @@ enum class AffixType {
     DAMAGE_REDUCTION,   // 伤害减免 +X%
     SKILL_DAMAGE,       // 技能伤害 +X%
     
-    // 特殊效果
+    // 特殊效果 todo实现到战斗
     LIFESTEAL,          // 吸血 +X%
     COUNTER_RATE,       // 反击率 +X%
-    RAGE_GAIN,          // 怒气获取 +X%
     HEAL_BONUS,         // 治疗加成 +X%
     MULTI_HIT_RATE,      // 连击率 +X%
     
     // 抗性
     STUN_RESIST,        // 眩晕抗性 +X%
+    FREEZE_RESIST,      // 冰冻抗性 +X%
     SILENCE_RESIST,     // 沉默抗性 +X%
+    TAUNT_RESIST,       // 嘲讽抗性 +X%
+    INJURY_RESIST,      // 受伤抗性 +X%
+    BLEED_RESIST,       // 流血抗性 +X%
+    CURSE_RESIST,       // 诅咒抗性 +X%
+    BURN_RESIST,        // 灼烧抗性 +X%
     POISON_RESIST,      // 中毒抗性 +X%
 };
