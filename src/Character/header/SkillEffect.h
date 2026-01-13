@@ -15,7 +15,7 @@ struct SkillEffect {
     SkillEffect(TargetType t, EffectType e, ValueType vt, int64_t v, 
                 int dur = 0, int ch = 100);
     
-    static SkillEffect Damage(TargetType t, int64_t atkPercent, int ch = 100);
+    static SkillEffect Damage_PA(TargetType t, int64_t atkPercent, int ch = 100);
     static SkillEffect DamageFixed(TargetType t, int64_t value, int ch = 100);
     static SkillEffect DamageByTargetHp(TargetType t, int64_t hpPercent, int ch = 100);
     static SkillEffect DamageByLostHp(TargetType t, int64_t lostHpPercent, int ch = 100);
@@ -24,9 +24,6 @@ struct SkillEffect {
     static SkillEffect HealByAtk(TargetType t, int64_t atkPercent, int ch = 100);
     static SkillEffect HealFixed(TargetType t, int64_t value, int ch = 100);
     
-    static SkillEffect Poison(TargetType t, int64_t atkPercent, int dur, int ch = 100);
-    static SkillEffect Burn(TargetType t, int64_t atkPercent, int dur, int ch = 100);
-    static SkillEffect Bleed(TargetType t, int64_t atkPercent, int dur, int ch = 100);
     static SkillEffect Dot(TargetType t, EffectType dotType, int64_t atkPercent, 
                            int dur, int ch = 100);
     
@@ -35,10 +32,6 @@ struct SkillEffect {
                                     int dur, int ch = 100);
     
     static SkillEffect Control(TargetType t, EffectType e, int dur, int ch = 100);
-    static SkillEffect Stun(TargetType t, int dur, int ch = 100);
-    static SkillEffect Silence(TargetType t, int dur, int ch = 100);
-    static SkillEffect Freeze(TargetType t, int dur, int ch = 100);
-    static SkillEffect Taunt(TargetType t, int dur, int ch = 100);
     
     static SkillEffect Shield(TargetType t, int64_t hpPercent, int dur = 99, int ch = 100);
     static SkillEffect ShieldByAtk(TargetType t, int64_t atkPercent, int dur = 99, int ch = 100);
@@ -50,4 +43,5 @@ struct SkillEffect {
     static SkillEffect Revive(TargetType t, int64_t hpPercent, int ch = 100);
     static SkillEffect Dispel(TargetType t, int64_t count = 99, int ch = 100);
     static SkillEffect Cleanse(TargetType t, int64_t count = 99, int ch = 100);
+    static SkillEffect TransferDebuff(TargetType t, int ch = 100);
 };

@@ -52,7 +52,7 @@ enum class ValueType {
     PERCENT_MAX_HP,     // 最大生命值百分比
     PERCENT_CUR_HP,     // 当前生命值百分比
     PERCENT_LOST_HP,    // 已损失生命值百分比
-    PERCENT_TARGET_HP,  // 目标最大生命值百分比
+    PERCENT_TARGET_MAXHP,  // 目标最大生命值百分比
 };
 
 // ==================== 效果类型 ====================
@@ -72,14 +72,14 @@ enum class EffectType {
     BARRIER,            // 屏障（免疫单次控制效果，新增）
     
     // 属性Buff
-    BUFF_MAX_HP,        // 最大生命值加成
-    BUFF_ATK,           // 攻击力加成
-    BUFF_DEF,           // 防御力加成
-    BUFF_SPEED,         // 速度加成
-    BUFF_CRIT_RATE,     // 暴击率加成
-    BUFF_CRIT_RESIST,   // 抗暴率
-    BUFF_HIT_RATE,      // 命中率加成
-    BUFF_DODGE_RATE,    // 闪避率加成
+    BUFF_MAX_HP,        // 最大生命值加成（%）
+    BUFF_ATK,           // 攻击力加成（%）
+    BUFF_DEF,           // 防御力加成（%）
+    BUFF_SPEED,         // 速度加成（%）
+    BUFF_CRIT_RATE,     // 暴击率加成（%）
+    BUFF_CRIT_RESIST,   // 抗暴率（%）
+    BUFF_HIT_RATE,      // 命中率加成（%）
+    BUFF_DODGE_RATE,    // 闪避率加成（%）
 
     // 持续BUFF
     BUFF_REGEN,         // 持续回血
@@ -140,22 +140,20 @@ enum class SkillTrigger
     NORMAL_ATTACK, // 普通攻击
     RAGE_SKILL,    // 怒气技能
     ON_SAME_CAMP, // 合击技能
+
     // 战斗阶段触发
-    BATTLE_START,   // 开局技能
-    ROUND_START,    // 回合开始
-    ROUND_END,      // 回合结束
-    TURN_START,     // 自身行动开始
-    TURN_END,       // 自身行动结束
+    BATTLE_START,   // 开局技能【兵符】
+    ROUND_START,    // 回合开始【不宜太多】
+    ROUND_END,      // 回合结束【不宜太多】
+    TURN_START,     // 自身行动开始【战马等】
+    TURN_END,       // 自身行动结束【战马等】
 
     // 受击/伤害相关触发
     ON_HIT,          // 受到攻击时
-    ON_BEFORE_HIT,   // 受到攻击前（用于无敌的判断）
-    ON_CONTRAL,      // 受到控制时
-    ON_DODGE,        // 闪避攻击时
-    ON_KILL,         // 击杀敌人
+    ON_CONTROL,      // 受到控制时
+    ON_KILL,         // 击杀敌人 todo
     // 血量/状态触发
-    ON_LOW_HP,      // 低生命触发
-    ON_CONTROL, // 受到控制效果时
+
     ON_DEATH,  // 阵亡技能
 
     None          // 无触发

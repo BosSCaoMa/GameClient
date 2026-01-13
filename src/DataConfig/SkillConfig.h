@@ -41,6 +41,7 @@ private:
     using T = TargetType;
     using E = EffectType;
     using Tr = SkillTrigger;
+    using SE = SkillEffect;
     void initSkills();
     void initQunSkills();
     void initWeiSkills();
@@ -48,6 +49,7 @@ private:
     void initWuSkills();
     void initShenSkills();
     void initBaseSkills();
+    void initWeaponSkills();
     std::unordered_map<int, Skill> skills_;
 };
 

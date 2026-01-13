@@ -87,9 +87,9 @@ private:
         TargetType base, bool byAtk, bool highest);
     
     // ==================== 技能触发 ====================
-    void triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter = nullptr);
+    void triggerSkills(SkillTrigger trigger);
+    void triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter);
     void triggerOnHit(BattleCharacter* defender, BattleCharacter* attacker);
-    void triggerOnLowHp(BattleCharacter* character);
     void triggerOnDeath(BattleCharacter* character);
     
     // ==================== 状态检查 ====================

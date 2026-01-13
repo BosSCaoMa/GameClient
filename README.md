@@ -2,16 +2,16 @@
 游戏服务器
 
 核心模块
+- 类型 审视  丰富
+- 物品 done  暂不
+- 装备 done  
+- 效果 done  完成
+- 技能 done  
+- 武将 done
+- 玩家 done
+- 战斗 done
 
-- 物品 done
 物品不涉及升级，所以基础部分全部保存在itemconfig中，背包系统保存{id, count}
-- 装备 done
-- 效果 done 类型补充完全
-- 技能 
-- 武将
-- 玩家
-- 战斗
-
 
 
 # BattleManager 函数调用流程

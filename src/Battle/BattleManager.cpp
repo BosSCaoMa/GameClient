@@ -124,8 +124,10 @@ BattleManager::Result BattleManager::executeRound()
         if (!actor->isAlive || actor->hasActed) {
             continue;
         }
-        
+
+        triggerSkills(SkillTrigger::TURN_START, actor);
         executeAction(actor);
+        triggerSkills(SkillTrigger::TURN_END, actor);
         
         result_ = checkBattleResult();
         if (result_ != Result::ONGOING) {
@@ -146,28 +148,6 @@ BattleManager::Result BattleManager::executeRound()
     
     return result_;
 }
-
-BattleManager::Result BattleManager::getResult() const {
-    return result_;
-}
-
-int BattleManager::getRound() const {
-    return round_;
-}
-
-bool BattleManager::isOver() const {
-    return result_ != Result::ONGOING;
-}
-
-const vector<BattleCharacter>& BattleManager::getUserTeam() const {
-    return userTeam_;
-}
-
-const vector<BattleCharacter>& BattleManager::getEnemyTeam() const {
-    return enemyTeam_;
-}
-
-
 
 // ==================== 回合流程 ====================
 void BattleManager::onRoundStart()
@@ -304,8 +284,16 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::PIERCE: {
             int64_t damage = calculateDamage(caster, target, effect);
             target->takeDamage(damage, effect.effect != EffectType::PIERCE);
+
             log("  - " + target->name + " 受到 " + to_string(damage) + " 点伤害 (剩余HP: " +
                 to_string(target->currentAttr.hp) + ")");
+
+            if (damage > 0 && caster->currentAttr.mutiHitRate > 0) {
+                if (rollChance(caster->currentAttr.mutiHitRate)) {
+                    log("    连击触发，" + caster->name + " 进行额外一次攻击！");
+                    applyEffect(caster, target, effect, skillId);
+                }
+            }
             triggerOnHit(target, caster);
             break;
         }
@@ -343,8 +331,7 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
             target->addShield(shield);
             break;
         }
-        // ===== Buff效果 =====
-        case EffectType::BARRIER:
+        // ===== Buff效果（全部取%） =====
         case EffectType::BUFF_MAX_HP:
         case EffectType::BUFF_ATK:
         case EffectType::BUFF_DEF:
@@ -354,12 +341,19 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::BUFF_HIT_RATE:
         case EffectType::BUFF_DODGE_RATE:
         // ===== 持续BUFF =====
-        case EffectType::BUFF_REGEN:
+        case EffectType::BUFF_REGEN: {
+            int64_t buffValue = calculateValue(caster, effect, target);
+            target->addBuff(effect.effect, buffValue, effect.duration, skillId);
+            log("  - " + target->name + " 获得状态 " + getEffectName(effect.effect));
+            break;
+        }
         // ===== 控制效果 =====
         case EffectType::STUN:
         case EffectType::SILENCE:
         case EffectType::FREEZE:
+            triggerSkills(SkillTrigger::ON_CONTROL, target);
         // ====== 特殊状态 ======
+        case EffectType::BARRIER:
         case EffectType::INJURY:
         case EffectType::LOCK_BLEED:
         case EffectType::IMMUNITY:
@@ -381,6 +375,7 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         
         // ===== 嘲讽 =====
         case EffectType::TAUNT: {
+            triggerSkills(SkillTrigger::ON_CONTROL, target);
             target->addBuff(effect.effect, caster->battleId, effect.duration, skillId);
             break;
         }
@@ -454,7 +449,7 @@ int64_t BattleManager::calculateValue(BattleCharacter* caster, const SkillEffect
             int64_t lostHp = caster->currentAttr.maxHp - caster->currentAttr.hp;
             return lostHp * baseValue / 100;
         }
-        case ValueType::PERCENT_TARGET_HP:
+        case ValueType::PERCENT_TARGET_MAXHP:
             return target->currentAttr.maxHp * baseValue / 100;
         default:
             return baseValue;
@@ -501,6 +496,8 @@ int64_t BattleManager::calculateHeal(BattleCharacter* caster, BattleCharacter* t
      const SkillEffect& effect)
 {
     int64_t heal = calculateValue(caster, effect);
+    // 治疗加成
+    heal = heal * (100 + caster->currentAttr.healBonus) / 100;
     return max(static_cast<int64_t>(0), heal);
 }
 
@@ -703,21 +700,16 @@ vector<BattleCharacter*> BattleManager::selectByAttr(vector<BattleCharacter>& te
 }
 
 // ==================== 技能触发 ====================
-void BattleManager::triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter)
+void BattleManager::triggerSkills(SkillTrigger trigger)
 {
-    // 收集所有存活角色
     vector<BattleCharacter*> allChars;
-    if (specificCharacter) {
-        if (specificCharacter->isAlive) allChars.push_back(specificCharacter);
-    } else {
-        for (auto& ch : userTeam_) {
-            if (ch.isAlive) allChars.push_back(&ch);
-        }
-        for (auto& ch : enemyTeam_) {
-            if (ch.isAlive) allChars.push_back(&ch);
-        }
+    for (auto& ch : userTeam_) {
+        if (ch.isAlive) allChars.push_back(&ch);
     }
-    
+    for (auto& ch : enemyTeam_) {
+        if (ch.isAlive) allChars.push_back(&ch);
+    }
+
     // 按速度排序（速度高的先触发）
     sort(allChars.begin(), allChars.end(),
         [](BattleCharacter* a, BattleCharacter* b) {
@@ -736,6 +728,16 @@ void BattleManager::triggerSkills(SkillTrigger trigger, BattleCharacter* specifi
     }
 }
 
+void BattleManager::triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter)
+{
+    if (!specificCharacter) return;
+    Skill* skill = specificCharacter->getSkill(trigger);
+    log(specificCharacter->name + "触发技能: " + skill->name);
+    for (const SkillEffect& effect : skill->effects) {
+        executeEffect(specificCharacter, effect, skill->id);
+    }
+}
+
 void BattleManager::triggerOnHit(BattleCharacter* defender, BattleCharacter* attacker)
 {
     if (!defender || !defender->isAlive) {
@@ -747,25 +749,6 @@ void BattleManager::triggerOnHit(BattleCharacter* defender, BattleCharacter* att
         
         for (const SkillEffect& effect : skill->effects) {
             executeEffect(defender, effect, skill->id);
-        }
-    }
-}
-
-void BattleManager::triggerOnLowHp(BattleCharacter* character) {
-    if (!character || !character->isAlive) {
-        return;
-    }
-    
-    // 检查血量是否低于30%
-    int64_t hpPercent = character->currentAttr.hp * 100 / character->currentAttr.maxHp;
-    if (hpPercent > 30) {
-        return;
-    }
-    
-    Skill* skill = character->getSkill(SkillTrigger::ON_LOW_HP);
-    if (skill && skill->id != 0) {   
-        for (const SkillEffect& effect : skill->effects) {
-            executeEffect(character, effect, skill->id);
         }
     }
 }
@@ -923,4 +906,24 @@ int64_t BattleManager::calculateTrueDamage(BattleCharacter* caster, BattleCharac
     baseDamage = baseDamage * (100 - target->currentAttr.damageReduction) / 100;
 
     return max(static_cast<int64_t>(1), baseDamage);
+}
+
+BattleManager::Result BattleManager::getResult() const {
+    return result_;
+}
+
+int BattleManager::getRound() const {
+    return round_;
+}
+
+bool BattleManager::isOver() const {
+    return result_ != Result::ONGOING;
+}
+
+const vector<BattleCharacter>& BattleManager::getUserTeam() const {
+    return userTeam_;
+}
+
+const vector<BattleCharacter>& BattleManager::getEnemyTeam() const {
+    return enemyTeam_;
 }

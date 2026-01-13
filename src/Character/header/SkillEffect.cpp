@@ -10,12 +10,12 @@ SkillEffect::SkillEffect()
     , chance(100) {}
 
 SkillEffect::SkillEffect(TargetType t, EffectType e, ValueType vt, int64_t v, 
-            int dur = 0, int ch = 100)
+            int dur, int ch)
     : target(t), effect(e), valueType(vt), value(v), 
       duration(dur), chance(ch) {}
 
 // ==================== 伤害类实现 ====================
-SkillEffect SkillEffect::Damage(TargetType t, int64_t atkPercent, int ch) {
+SkillEffect SkillEffect::Damage_PA(TargetType t, int64_t atkPercent, int ch) {
     return {t, EffectType::DAMAGE, ValueType::PERCENT_ATK, atkPercent, 0, ch};
 }
 
@@ -24,7 +24,7 @@ SkillEffect SkillEffect::DamageFixed(TargetType t, int64_t value, int ch) {
 }
 
 SkillEffect SkillEffect::DamageByTargetHp(TargetType t, int64_t hpPercent, int ch) {
-    return {t, EffectType::DAMAGE, ValueType::PERCENT_TARGET_HP, hpPercent, 0, ch};
+    return {t, EffectType::DAMAGE, ValueType::PERCENT_TARGET_MAXHP, hpPercent, 0, ch};
 }
 
 SkillEffect SkillEffect::DamageByLostHp(TargetType t, int64_t lostHpPercent, int ch) {
@@ -44,58 +44,20 @@ SkillEffect SkillEffect::HealFixed(TargetType t, int64_t value, int ch) {
     return {t, EffectType::HEAL, ValueType::FIXED, value, 0, ch};
 }
 
-// ====================DOT类（持续伤害） ====================
-SkillEffect SkillEffect::Poison(TargetType t, int64_t atkPercent, int dur, int ch) {
-    return {t, EffectType::POISON, ValueType::PERCENT_ATK, atkPercent, dur, ch};
-}
-
-SkillEffect SkillEffect::Burn(TargetType t, int64_t atkPercent, int dur, int ch) {
-    return {t, EffectType::BURN, ValueType::PERCENT_ATK, atkPercent, dur, ch};
-}
-
-SkillEffect SkillEffect::Bleed(TargetType t, int64_t atkPercent, int dur, int ch) {
-    return {t, EffectType::BLEED, ValueType::PERCENT_ATK, atkPercent, dur, ch};
-}
-
-// 通用DOT（可指定类型）
+// ==================== DOT类（持续伤害） ====================
+// POISON BURN BLEED CURSE
 SkillEffect SkillEffect::Dot(TargetType t, EffectType dotType, int64_t atkPercent, 
-                       int dur, int ch) {
+    int dur, int ch) {
     return {t, dotType, ValueType::PERCENT_ATK, atkPercent, dur, ch};
 }
 
 // ==================== Buff/Debuff类实现 ====================
+// BUFF_MAX_HP BUFF_ATK  ………………… 使用FIXED，-> 目标对应属性百分比
 SkillEffect SkillEffect::Buff(TargetType t, EffectType e, int64_t val, int dur, int ch) {
     return {t, e, ValueType::FIXED, val, dur, ch};
 }
 
-SkillEffect SkillEffect::BuffPercent(TargetType t, EffectType e, int64_t percent, 
-                        int dur, int ch) {
-    return {t, e, ValueType::PERCENT_TARGET_HP, percent, dur, ch};
-}
-
-// ==================== 控制类实现 ====================
-// 控制效果（眩晕、沉默、冰冻）
-SkillEffect SkillEffect::Control(TargetType t, EffectType e, int dur, int ch) {
-    return {t, e, ValueType::FIXED, 0, dur, ch};
-}
-// 眩晕
-SkillEffect SkillEffect::Stun(TargetType t, int dur, int ch) {
-    return {t, EffectType::STUN, ValueType::FIXED, 0, dur, ch};
-}
-// 眩晕
-SkillEffect SkillEffect::Silence(TargetType t, int dur, int ch) {
-    return {t, EffectType::SILENCE, ValueType::FIXED, 0, dur, ch};
-}
-// 冰冻
-SkillEffect SkillEffect::Freeze(TargetType t, int dur, int ch) {
-    return {t, EffectType::FREEZE, ValueType::FIXED, 0, dur, ch};
-}
-// 嘲讽
-SkillEffect SkillEffect::Taunt(TargetType t, int dur, int ch) {
-    return {t, EffectType::TAUNT, ValueType::FIXED, 0, dur, ch};
-}
-
-// ==================== 护盾类实现 ====================
+// ==================== 护盾类实现 【目标类型 -数值】====================
 
 // 最大生命值百分比护盾
 SkillEffect SkillEffect::Shield(TargetType t, int64_t hpPercent, int dur, int ch) {
@@ -127,12 +89,26 @@ SkillEffect SkillEffect::Revive(TargetType t, int64_t hpPercent, int ch) {
     return {t, EffectType::REVIVE, ValueType::PERCENT_MAX_HP, hpPercent, 0, ch};
 }
 
+// ================================== 控制与反控制类实现 ======================
+
+// =====================【目标 - 等级 - 触发概率】=======================
+
+// 控制效果（眩晕、沉默、冰冻、嘲讽、受伤）
+SkillEffect SkillEffect::Control(TargetType t, EffectType e, int dur, int ch) {
+    return {t, e, ValueType::FIXED, 0, dur, ch};
+}
+
 // 驱散Buff
 SkillEffect SkillEffect::Dispel(TargetType t, int64_t count, int ch) {
     return {t, EffectType::DISPEL, ValueType::FIXED, count, 0, ch};
 }
 
-// 净化Debuff
+// 净化Debuff 
 SkillEffect SkillEffect::Cleanse(TargetType t, int64_t count, int ch) {
     return {t, EffectType::CLEANSE, ValueType::FIXED, count, 0, ch};
+}
+
+// 转移Debuff
+SkillEffect SkillEffect::TransferDebuff(TargetType t, int ch) {
+    return {t, EffectType::TRANSFER_DEBUFF, ValueType::FIXED, 0, 0, ch};
 }
