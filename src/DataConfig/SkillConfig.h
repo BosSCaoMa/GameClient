@@ -49,7 +49,10 @@ private:
     void initWuSkills();
     void initShenSkills();
     void initBaseSkills();
-    void initWeaponSkills();
+    void initEquipSkills();
+    void initFourEquipSkills();
+    void initMountAndGeneralSkills();
+    void initTreasureSkills();
     std::unordered_map<int, Skill> skills_;
 };
 

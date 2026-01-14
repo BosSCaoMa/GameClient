@@ -14,7 +14,7 @@ SkillEffect::SkillEffect(TargetType t, EffectType e, ValueType vt, int64_t v,
     : target(t), effect(e), valueType(vt), value(v), 
       duration(dur), chance(ch) {}
 
-// ==================== 伤害类实现 ====================
+// ==================== 1、伤害类实现 ====================
 SkillEffect SkillEffect::Damage_PA(TargetType t, int64_t atkPercent, int ch) {
     return {t, EffectType::DAMAGE, ValueType::PERCENT_ATK, atkPercent, 0, ch};
 }
@@ -31,7 +31,7 @@ SkillEffect SkillEffect::DamageByLostHp(TargetType t, int64_t lostHpPercent, int
     return {t, EffectType::DAMAGE, ValueType::PERCENT_LOST_HP, lostHpPercent, 0, ch};
 }
 
-// ==================== 治疗类实现 ====================
+// ==================== 2、治疗类实现 ====================
 SkillEffect SkillEffect::Heal(TargetType t, int64_t hpPercent, int ch) {
     return {t, EffectType::HEAL, ValueType::PERCENT_MAX_HP, hpPercent, 0, ch};
 }
@@ -44,20 +44,20 @@ SkillEffect SkillEffect::HealFixed(TargetType t, int64_t value, int ch) {
     return {t, EffectType::HEAL, ValueType::FIXED, value, 0, ch};
 }
 
-// ==================== DOT类（持续伤害） ====================
-// POISON BURN BLEED CURSE
+// ============3、DOT类（持续伤害）POISON BURN BLEED CURSE ====================
+// 
 SkillEffect SkillEffect::Dot(TargetType t, EffectType dotType, int64_t atkPercent, 
     int dur, int ch) {
     return {t, dotType, ValueType::PERCENT_ATK, atkPercent, dur, ch};
 }
 
-// ==================== Buff/Debuff类实现 ====================
-// BUFF_MAX_HP BUFF_ATK  ………………… 使用FIXED，-> 目标对应属性百分比
+// ==================== 4、Buff/Debuff类实现【目前buff类只能通过百分比提升】 ====================
+// 攻击力、防御、速度等等
 SkillEffect SkillEffect::Buff(TargetType t, EffectType e, int64_t val, int dur, int ch) {
     return {t, e, ValueType::FIXED, val, dur, ch};
 }
 
-// ==================== 护盾类实现 【目标类型 -数值】====================
+// ==================== 5、护盾类实现 【目标类型 -数值】====================
 
 // 最大生命值百分比护盾
 SkillEffect SkillEffect::Shield(TargetType t, int64_t hpPercent, int dur, int ch) {
@@ -74,7 +74,7 @@ SkillEffect SkillEffect::ShieldFixed(TargetType t, int64_t value, int dur, int c
     return {t, EffectType::SHIELD, ValueType::FIXED, value, dur, ch};
 }
 
-// ==================== 怒气类实现 ====================
+// ==================== 6、怒气类实现 ====================
 SkillEffect SkillEffect::RageAdd(TargetType t, int64_t amount, int ch) {
     return {t, EffectType::RAGE_ADD, ValueType::FIXED, amount, 0, ch};
 }
@@ -83,14 +83,9 @@ SkillEffect SkillEffect::RageReduce(TargetType t, int64_t amount, int ch) {
     return {t, EffectType::RAGE_REDUCE, ValueType::FIXED, amount, 0, ch};
 }
 
-// ==================== 特殊类实现 ====================
-// 复活
-SkillEffect SkillEffect::Revive(TargetType t, int64_t hpPercent, int ch) {
-    return {t, EffectType::REVIVE, ValueType::PERCENT_MAX_HP, hpPercent, 0, ch};
-}
 
-// ================================== 控制与反控制类实现 ======================
 
+// ==================7、控制与反控制类实现 ======================
 // =====================【目标 - 等级 - 触发概率】=======================
 
 // 控制效果（眩晕、沉默、冰冻、嘲讽、受伤）
@@ -111,4 +106,9 @@ SkillEffect SkillEffect::Cleanse(TargetType t, int64_t count, int ch) {
 // 转移Debuff
 SkillEffect SkillEffect::TransferDebuff(TargetType t, int ch) {
     return {t, EffectType::TRANSFER_DEBUFF, ValueType::FIXED, 0, 0, ch};
+}
+
+// ==================== 特殊类实现 ====================
+SkillEffect SkillEffect::Revive(TargetType t, int64_t hpPercent, int ch) {
+    return {t, EffectType::REVIVE, ValueType::PERCENT_MAX_HP, hpPercent, 0, ch};
 }

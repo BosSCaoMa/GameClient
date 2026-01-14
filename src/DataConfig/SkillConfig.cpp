@@ -3,7 +3,7 @@
 void SkillConfig::initSkills()
 {
     initBaseSkills();
-    initWeaponSkills();
+    initEquipSkills();
     initQunSkills();
     initWeiSkills();
     initShuSkills();
@@ -170,13 +170,65 @@ void SkillConfig::initShuSkills()
 
 void SkillConfig::initWuSkills()
 {
+    // 徐盛
+    reg(Skill(1001, "破军", Tr::RAGE_SKILL)
+        .addEffect(SE::Damage_PA(T::ENEMY_SINGLE, 500))
+        .addEffect(SE::Control(T::ENEMY_FRONT_ROW, E::INJURY, 3, 40))); // 受伤3回合(40%)
+    reg(Skill(1002, "力破万军", Tr::ON_SAME_CAMP)
+        .addEffect(SE::Damage_PA(T::ENEMY_FRONT_ROW, 500))
+        .addEffect(SE::Control(T::ENEMY_FRONT_ROW, E::INJURY, 5, 60))); // 受伤5回合(60%)
 
+    // 周泰
+    reg(Skill(1003, "坚不可摧", Tr::RAGE_SKILL)
+        .addEffect(SE::Shield(T::SELF, 50, 5)) // 护盾50%，持续5回合
+        .addEffect(SE::Buff(T::SELF, E::BUFF_DEF, 30, 5))); // 防御提升30%，持续5回合
+
+    // 太史慈
+    reg(Skill(1004, "烈焰箭雨", Tr::RAGE_SKILL)
+        .addEffect(SE::Damage_PA(T::ENEMY_ALL, 300))
+        .addEffect(SE::Dot(T::ENEMY_ALL, E::BURN, 50, 4))); // 灼烧，持续4回合，基于攻击力的50%
 }
 
 void SkillConfig::initShenSkills()
 {
 }
 
-void SkillConfig::initWeaponSkills()
+void SkillConfig::initEquipSkills()
 {
+    // 基础装备技能
+    
+    initFourEquipSkills(); // 四象装备技能:武器、防具、头盔、鞋子
+    initMountAndGeneralSkills(); // 坐骑、名将等技能
+    initTreasureSkills(); // 宝物、兵符技能
+}
+
+void SkillConfig::initFourEquipSkills()
+{
+    // 武器技能
+
+    
+    // 防具技能
+
+    
+    // 头盔技能
+
+    
+    // 鞋子技能
+
+}
+
+void SkillConfig::initMountAndGeneralSkills()
+{
+    // 坐骑技能
+    
+    // 名将技能
+}
+
+void SkillConfig::initTreasureSkills()
+{
+    // 宝物技能
+
+    
+    // 兵符技能
+
 }

@@ -108,7 +108,7 @@ BattleManager::Result BattleManager::runBattle()
     
     return result_;
 }
-
+// todo 优化整体战斗逻辑，可以先不做，等到程序可以运行之后，进行优化，这样可以看效果
 BattleManager::Result BattleManager::executeRound()
 {
     round_++;
@@ -284,7 +284,10 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::PIERCE: {
             int64_t damage = calculateDamage(caster, target, effect);
             target->takeDamage(damage, effect.effect != EffectType::PIERCE);
-
+            if (!target->isAlive) {
+                triggerSkills(SkillTrigger::ON_KILL, caster);
+                break;
+            }
             log("  - " + target->name + " 受到 " + to_string(damage) + " 点伤害 (剩余HP: " +
                 to_string(target->currentAttr.hp) + ")");
 

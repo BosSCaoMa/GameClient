@@ -143,17 +143,15 @@ enum class SkillTrigger
 
     // 战斗阶段触发
     BATTLE_START,   // 开局技能【兵符】
-    ROUND_START,    // 回合开始【不宜太多】
-    ROUND_END,      // 回合结束【不宜太多】
-    TURN_START,     // 自身行动开始【战马等】
-    TURN_END,       // 自身行动结束【战马等】
+    ROUND_START,    // 回合开始【高品质武将技能】
+    ROUND_END,      // 回合结束【高品质武将技能】
+    TURN_START,     // 自身行动开始
+    TURN_END,       // 自身行动结束
 
     // 受击/伤害相关触发
     ON_HIT,          // 受到攻击时
     ON_CONTROL,      // 受到控制时
-    ON_KILL,         // 击杀敌人 todo
-    // 血量/状态触发
-
+    ON_KILL,         // 击杀敌人
     ON_DEATH,  // 阵亡技能
 
     None          // 无触发

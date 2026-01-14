@@ -132,7 +132,7 @@ void BattleCharacter::recalculateAttr()
     currentAttr = baseAttr;
     currentAttr.hp = currentHp;
     currentAttr.rage = currentRage;
-    
+    //[设定，生命值、攻击力、防御力技能效果只能通过Buff百分比提升，不支持直接数值提升]
     for (const Buff& buff : buffs) {
         switch (buff.type) {
             case EffectType::BURN:
