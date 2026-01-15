@@ -17,7 +17,7 @@ public:
     BattleAttr baseAttr;        // 战斗开始快照
     BattleAttr currentAttr;     // 当前属性
     
-    std::unordered_map<SkillTrigger, Skill> skills;
+    std::unordered_map<SkillTrigger, std::vector<Skill>> skills;
     std::vector<Buff> buffs;
 
     
@@ -64,6 +64,8 @@ public:
     
     // ==================== 技能相关 ====================
     Skill* getSkill(SkillTrigger trigger);
+    std::vector<Skill>* getSkills(SkillTrigger trigger);
+    const std::vector<Skill>* getSkills(SkillTrigger trigger) const;
     
     Skill* getNormalAttack();
     

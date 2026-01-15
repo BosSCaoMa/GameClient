@@ -36,6 +36,7 @@ void BattleManager::initBattle()
     
     createBattleCharacters();
     buildUnitMap();
+    buildTriggerBuckets();
     log("战斗开始");
 }
 
@@ -84,6 +85,34 @@ void BattleManager::buildUnitMap()
     }
     for (auto& ch : enemyTeam_) {
         unitMap[ch.battleId] = &ch;
+    }
+}
+
+void BattleManager::buildTriggerBuckets()
+{
+    for (auto& bucket : triggerBuckets_) {
+        bucket.clear();
+    }
+
+    for (auto& ch : userTeam_) {
+        registerCharacterTriggers(ch);
+    }
+    for (auto& ch : enemyTeam_) {
+        registerCharacterTriggers(ch);
+    }
+}
+
+void BattleManager::registerCharacterTriggers(BattleCharacter& ch)
+{
+    for (const auto& entry : ch.skills) {
+        const auto index = static_cast<size_t>(entry.first);
+        if (index >= triggerBuckets_.size()) {
+            continue;
+        }
+        if (entry.second.empty()) {
+            continue;
+        }
+        triggerBuckets_[index].push_back(&ch);
     }
 }
 
@@ -297,7 +326,7 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
                     applyEffect(caster, target, effect, skillId);
                 }
             }
-            triggerOnHit(target, caster);
+            triggerSkills(SkillTrigger::ON_HIT, target);
             break;
         }
         case EffectType::TRUE_DAMAGE: {
@@ -305,7 +334,7 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
             target->takeDamage(damage, false);
             log("  - " + target->name + " 受到 " + to_string(damage) + " 点真实伤害 (剩余HP: " +
                 to_string(target->currentAttr.hp) + ")");
-            triggerOnHit(target, caster);
+            triggerSkills(SkillTrigger::ON_HIT, target);
             break;
         }
         // ===== 治疗 =====
@@ -705,70 +734,72 @@ vector<BattleCharacter*> BattleManager::selectByAttr(vector<BattleCharacter>& te
 // ==================== 技能触发 ====================
 void BattleManager::triggerSkills(SkillTrigger trigger)
 {
-    vector<BattleCharacter*> allChars;
-    for (auto& ch : userTeam_) {
-        if (ch.isAlive) allChars.push_back(&ch);
-    }
-    for (auto& ch : enemyTeam_) {
-        if (ch.isAlive) allChars.push_back(&ch);
-    }
-
-    // 按速度排序（速度高的先触发）
-    sort(allChars.begin(), allChars.end(),
-        [](BattleCharacter* a, BattleCharacter* b) {
-            return a->currentAttr.speed > b->currentAttr.speed;
-        });
-    
-    // 依次检查并触发技能
-    for (BattleCharacter* ch : allChars) {
-        Skill* skill = ch->getSkill(trigger);
-        if (skill && skill->id != 0) {
-            log(ch->name + "触发技能: " + skill->name);
-            for (const SkillEffect& effect : skill->effects) {
-                executeEffect(ch, effect, skill->id);
-            }
-        }
-    }
+    dispatchTrigger(trigger, nullptr, trigger == SkillTrigger::ON_DEATH);
 }
 
 void BattleManager::triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter)
 {
-    if (!specificCharacter) return;
-    Skill* skill = specificCharacter->getSkill(trigger);
-    log(specificCharacter->name + "触发技能: " + skill->name);
-    for (const SkillEffect& effect : skill->effects) {
-        executeEffect(specificCharacter, effect, skill->id);
-    }
-}
-
-void BattleManager::triggerOnHit(BattleCharacter* defender, BattleCharacter* attacker)
-{
-    if (!defender || !defender->isAlive) {
+    if (!specificCharacter) {
         return;
     }
-    
-    Skill* skill = defender->getSkill(SkillTrigger::ON_HIT);
-    if (skill && skill->id != 0) {
-        
-        for (const SkillEffect& effect : skill->effects) {
-            executeEffect(defender, effect, skill->id);
+    const bool allowDead = (trigger == SkillTrigger::ON_DEATH);
+    dispatchTrigger(trigger, specificCharacter, allowDead);
+}
+
+void BattleManager::dispatchTrigger(SkillTrigger trigger, BattleCharacter* filter, bool allowDead)
+{
+    const auto index = static_cast<size_t>(trigger);
+    if (index >= triggerBuckets_.size()) {
+        return;
+    }
+
+    triggerDispatchBuffer_.clear();
+    auto& registry = triggerBuckets_[index];
+    triggerDispatchBuffer_.reserve(registry.size());
+
+    for (BattleCharacter* ch : registry) {
+        if (!ch) {
+            continue;
         }
+        if (filter && ch != filter) {
+            continue;
+        }
+        if (allowDead) {
+            if (!filter && ch->isAlive) {
+                continue;
+            }
+        } else if (!ch->isAlive) {
+            continue;
+        }
+        triggerDispatchBuffer_.push_back(ch);
     }
-}
 
-void BattleManager::triggerOnDeath(BattleCharacter* character)
-{
-    if (!character) {
+    if (triggerDispatchBuffer_.empty()) {
         return;
     }
-    
-    Skill* skill = character->getSkill(SkillTrigger::ON_DEATH);
-    if (skill && skill->id != 0) {
-        LOG_INFO("%s 触发阵亡技能 [%s]", character->name.c_str(), skill->name.c_str());
-        
-        // 阵亡技能特殊处理：即使死亡也能释放
-        for (const SkillEffect& effect : skill->effects) {
-            executeEffect(character, effect, skill->id);
+
+    sort(triggerDispatchBuffer_.begin(), triggerDispatchBuffer_.end(),
+        [](BattleCharacter* a, BattleCharacter* b) {
+            return a->currentAttr.speed > b->currentAttr.speed;
+        });
+
+    for (BattleCharacter* ch : triggerDispatchBuffer_) {
+        const auto* skillList = ch->getSkills(trigger);
+        if (!skillList) {
+            continue;
+        }
+        for (const Skill& skill : *skillList) {
+            if (skill.id == 0) {
+                continue;
+            }
+            if (trigger == SkillTrigger::ON_DEATH) {
+                LOG_INFO("%s 触发阵亡技能 [%s]", ch->name.c_str(), skill.name.c_str());
+            } else if (trigger != SkillTrigger::ON_HIT) {
+                log(ch->name + "触发技能: " + skill.name);
+            }
+            for (const SkillEffect& effect : skill.effects) {
+                executeEffect(ch, effect, skill.id);
+            }
         }
     }
 }
@@ -800,7 +831,7 @@ void BattleManager::checkDeaths()
             ch.isAlive = false;
             ch.currentAttr.hp = 0;
             LOG_INFO("%s 阵亡！", ch.name.c_str());
-            triggerOnDeath(&ch);
+            triggerSkills(SkillTrigger::ON_DEATH, &ch);
         }
     }
     
@@ -809,7 +840,7 @@ void BattleManager::checkDeaths()
         if (ch.currentAttr.hp <= 0 && ch.isAlive) {
             ch.isAlive = false;
             ch.currentAttr.hp = 0;
-            triggerOnDeath(&ch);
+            triggerSkills(SkillTrigger::ON_DEATH, &ch);
         }
     }
 }

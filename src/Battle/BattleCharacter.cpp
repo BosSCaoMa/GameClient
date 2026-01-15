@@ -266,11 +266,21 @@ int BattleCharacter::transferDebuffsTo(BattleCharacter* target, int count)
 
 // ==================== 技能相关 ====================
 Skill* BattleCharacter::getSkill(SkillTrigger trigger) {
-    auto it = skills.find(trigger);
-    if (it != skills.end()) {
-        return &it->second;
+    auto* skillList = getSkills(trigger);
+    if (skillList && !skillList->empty()) {
+        return &skillList->front();
     }
     return nullptr;
+}
+
+std::vector<Skill>* BattleCharacter::getSkills(SkillTrigger trigger) {
+    auto it = skills.find(trigger);
+    return it != skills.end() ? &it->second : nullptr;
+}
+
+const std::vector<Skill>* BattleCharacter::getSkills(SkillTrigger trigger) const {
+    auto it = skills.find(trigger);
+    return it != skills.end() ? &it->second : nullptr;
 }
 
 Skill* BattleCharacter::getNormalAttack() {

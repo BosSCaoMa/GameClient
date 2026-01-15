@@ -1,11 +1,10 @@
-
-
 #pragma once
 
 #include <vector>
 #include <random>
 #include <functional>
 #include <string>
+#include <array>
 #include "BattleCharacter.h"
 
 class Player;
@@ -54,6 +53,8 @@ private:
     void initBattle();
     void buildUnitMap();
     void createBattleCharacters();
+    void buildTriggerBuckets();
+    void registerCharacterTriggers(BattleCharacter& ch);
     
     // ==================== 回合流程 ====================
     void onRoundStart();
@@ -89,8 +90,7 @@ private:
     // ==================== 技能触发 ====================
     void triggerSkills(SkillTrigger trigger);
     void triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter);
-    void triggerOnHit(BattleCharacter* defender, BattleCharacter* attacker);
-    void triggerOnDeath(BattleCharacter* character);
+    void dispatchTrigger(SkillTrigger trigger, BattleCharacter* filter, bool allowDead);
     
     // ==================== 状态检查 ====================
     Result checkBattleResult();
@@ -117,6 +117,8 @@ private:
     std::unordered_map<int, BattleCharacter*> unitMap;
     // 行动顺序
     std::vector<BattleCharacter*> actionOrder_;
+    std::array<std::vector<BattleCharacter*>, static_cast<size_t>(SkillTrigger::None) + 1> triggerBuckets_;
+    std::vector<BattleCharacter*> triggerDispatchBuffer_;
     
     // 战斗状态
     int round_;

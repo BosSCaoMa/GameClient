@@ -23,7 +23,7 @@ public:
     BattleAttr baseAttr;     // 当前属性（基础 + 装备 + Buff）
     
     // ==================== 技能 ====================
-    std::unordered_map<SkillTrigger, Skill> skills;
+    std::unordered_map<SkillTrigger, std::vector<Skill>> skills;
     
     // ==================== 装备 ====================
     std::unordered_map<EquipmentType, Equipment> equipments;
@@ -40,6 +40,7 @@ public:
     // ==================== 技能管理 ====================
     void setSkill(const Skill& skill);
     const Skill* getSkill(SkillTrigger trigger) const;
+    const std::vector<Skill>* getSkills(SkillTrigger trigger) const;
     bool hasSkill(SkillTrigger trigger) const;
     
     // ==================== 装备管理 ====================

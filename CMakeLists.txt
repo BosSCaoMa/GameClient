@@ -1,11 +1,41 @@
-cmake_minimum_required(VERSION 3.10)
-project(GameClient)
+cmake_minimum_required(VERSION 3.16)
+project(GameClient LANGUAGES CXX)
 
-# 设置C++标准
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# 添加可执行文件
-add_executable(GameClient main.cpp)
+file(GLOB_RECURSE GAMECLIENT_SOURCES CONFIGURE_DEPENDS
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+list(APPEND GAMECLIENT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
-target_link_libraries(GameClient PRIVATE ws2_32)
+add_executable(GameClient ${GAMECLIENT_SOURCES})
+
+target_include_directories(GameClient
+	PRIVATE
+		"${CMAKE_CURRENT_SOURCE_DIR}/src"
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/Battle"
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/Battle/header"
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/Character"
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/Character/header"
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/DataConfig"
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/Item"
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/CommonTools"
+		"${CMAKE_CURRENT_SOURCE_DIR}/src/Network"
+		"${CMAKE_CURRENT_SOURCE_DIR}/lib"
+)
+
+if(MSVC)
+	target_compile_options(GameClient PRIVATE /W4 /permissive- /Zc:__cplusplus /MP)
+	target_compile_definitions(GameClient PRIVATE _CRT_SECURE_NO_WARNINGS NOMINMAX)
+else()
+	target_compile_options(GameClient PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(WIN32)
+	target_link_libraries(GameClient PRIVATE ws2_32)
+elseif(UNIX)
+	find_package(Threads REQUIRED)
+	target_link_libraries(GameClient PRIVATE Threads::Threads)
+endif()

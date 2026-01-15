@@ -4,6 +4,19 @@
 #include "characterConfig.h"
 #include <cmath>
 
+namespace {
+bool isExclusiveTrigger(SkillTrigger trigger) {
+    switch (trigger) {
+        case SkillTrigger::NORMAL_ATTACK:
+        case SkillTrigger::RAGE_SKILL:
+        case SkillTrigger::ON_SAME_CAMP:
+            return true;
+        default:
+            return false;
+    }
+}
+}
+
 // ==================== 构造函数 ====================
 Character::Character() 
     : id(0), level(1), star(1), quality(1)
@@ -21,16 +34,38 @@ void Character::setSkill(const Skill& skill) {
     if (skill.id == 0) {
         return;
     }
-    skills[skill.trigger] = skill;
+    auto& skillList = skills[skill.trigger];
+    if (isExclusiveTrigger(skill.trigger)) {
+        skillList.clear();
+        skillList.push_back(skill);
+        return;
+    }
+    auto it = std::find_if(skillList.begin(), skillList.end(), [&](const Skill& s) {
+        return s.id == skill.id;
+    });
+    if (it != skillList.end()) {
+        *it = skill;
+    } else {
+        skillList.push_back(skill);
+    }
 }
 
 const Skill* Character::getSkill(SkillTrigger trigger) const {
+    auto it = skills.find(trigger);
+    if (it == skills.end() || it->second.empty()) {
+        return nullptr;
+    }
+    return &it->second.front();
+}
+
+const std::vector<Skill>* Character::getSkills(SkillTrigger trigger) const {
     auto it = skills.find(trigger);
     return it != skills.end() ? &it->second : nullptr;
 }
 
 bool Character::hasSkill(SkillTrigger trigger) const {
-    return skills.find(trigger) != skills.end();
+    auto it = skills.find(trigger);
+    return it != skills.end() && !it->second.empty();
 }
 
 // ==================== 装备管理 ====================
@@ -47,12 +82,28 @@ void Character::equipItem(const Equipment& equip)
 }
 
 void Character::unequipItem(EquipmentType type) {
-    equipments.erase(type);
-    for (auto it = skills.begin(); it != skills.end(); ++it) {
-        if (it->second.id == equipments[type].skillId) {
-            it = skills.erase(it);
+    auto equipIt = equipments.find(type);
+    if (equipIt == equipments.end()) {
+        return;
+    }
+
+    int removedSkillId = equipIt->second.skillId;
+    equipments.erase(equipIt);
+
+    if (removedSkillId != 0) {
+        for (auto it = skills.begin(); it != skills.end(); ) {
+            auto& skillList = it->second;
+            skillList.erase(std::remove_if(skillList.begin(), skillList.end(),
+                [removedSkillId](const Skill& s) { return s.id == removedSkillId; }),
+                skillList.end());
+            if (skillList.empty()) {
+                it = skills.erase(it);
+            } else {
+                ++it;
+            }
         }
     }
+
     recalculateAttr();
 }
 
