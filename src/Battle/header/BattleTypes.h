@@ -118,7 +118,7 @@ enum class EffectType {
     MARK_PROTECT,       // 保护标记（友方攻击时，优先攻击标记持有者）
 };
 
-bool IsDebuff(EffectType type, int64_t value)
+inline bool IsDebuff(EffectType type, int64_t value)
 {
     if (type >= EffectType::DEBUFF_BEGIN && type <= EffectType::DEBUFF_END) {
         return true;

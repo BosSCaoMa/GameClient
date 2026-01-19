@@ -5,12 +5,20 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(LOGMANAGER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../LogManager")
+if(NOT EXISTS "${LOGMANAGER_SOURCE_DIR}/CMakeLists.txt")
+	message(FATAL_ERROR "LogManager project not found at ${LOGMANAGER_SOURCE_DIR}")
+endif()
+add_subdirectory("${LOGMANAGER_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/LogManager")
+
 file(GLOB_RECURSE GAMECLIENT_SOURCES CONFIGURE_DEPENDS
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 list(APPEND GAMECLIENT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 add_executable(GameClient ${GAMECLIENT_SOURCES})
+
+target_link_libraries(GameClient PRIVATE LogM)
 
 target_include_directories(GameClient
 	PRIVATE

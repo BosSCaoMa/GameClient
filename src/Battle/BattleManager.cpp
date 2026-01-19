@@ -961,3 +961,9 @@ const vector<BattleCharacter>& BattleManager::getUserTeam() const {
 const vector<BattleCharacter>& BattleManager::getEnemyTeam() const {
     return enemyTeam_;
 }
+
+void BattleManager::log(const string& message) {
+    if (logCallback_) {
+        logCallback_(message);
+    }
+}

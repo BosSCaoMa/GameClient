@@ -1,7 +1,7 @@
 #include "Character.h"
 #include "ItemConfig.h"
 #include <algorithm>
-#include "characterConfig.h"
+#include "CharacterConfig.h"
 #include <cmath>
 
 namespace {

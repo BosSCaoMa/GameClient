@@ -7,7 +7,7 @@ Equipment ItemConfig::createEquipment(int equipId) const
 {
     const auto* tmpl = getEquipment(equipId);
     if (!tmpl) {
-        LOG_ERROR("Equipment template not found for id: {}", equipId);
+        LOG_ERROR("Equipment template not found for id: {%d}", equipId);
         return Equipment();
     }
     

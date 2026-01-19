@@ -38,12 +38,7 @@ public:
     // ==================== 状态检查 ====================
     bool isControlled() const;
     
-    bool isSilenced() const {
-        for (const Buff& b : buffs) {
-            if (b.type == EffectType::SILENCE) return true;
-        }
-        return false;
-    }
+    bool isSilenced() const;
     
     // ==================== 战斗操作 ====================
     void takeDamage(int64_t damage, bool canBeShielded = true);

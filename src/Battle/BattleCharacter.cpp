@@ -103,6 +103,7 @@ void BattleCharacter::tickBuffs()
             case EffectType::POISON:
                 b.value = b.value * 110 / 100; // 中毒伤害每回合增加10%
                 takeDamage(b.value, false);
+                break;
             case EffectType::CURSE:
                 takeDamage(b.value, false);
                 addRage(-1); // 诅咒：同时扣除怒气
@@ -188,7 +189,7 @@ bool BattleCharacter::isSilenced() const {
 }
 
 // ==================== 战斗操作 ====================
-void BattleCharacter::takeDamage(int64_t damage, bool canBeShielded = true)
+void BattleCharacter::takeDamage(int64_t damage, bool canBeShielded)
 {
     if (damage <= 0 || isInvincible()) {
         return;

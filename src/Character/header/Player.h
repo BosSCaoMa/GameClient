@@ -22,8 +22,8 @@ public:
     std::unordered_map<int, ItemSlot> itemsMap; // 物品背包 <itemId, ItemSlot>
     std::vector<Equipment> equipments;  // 装备背包
     
-    int maxItemSlots = 100;
-    int maxEquipSlots = 100;
+    unsigned int maxItemSlots = 100;
+    unsigned int maxEquipSlots = 100;
     
     // 添加物品
     bool addItem(int itemId, int count);
