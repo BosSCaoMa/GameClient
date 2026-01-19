@@ -1,137 +1,91 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <vector>
 #include <string>
-#include <thread>
 
-#include "NetworkClient.h"
-#include "LogM.h"
+#include "BattleManager.h"
+#include "Player.h"
+#include "SkillConfig.h"
+#include "CharacterConfig.h"
 
-#pragma comment(lib, "Ws2_32.lib")
+namespace {
 
-namespace { // 匿名命名空间。作用是把其中声明的东西限制在当前翻译单元（main.cpp)中可见
+Character createHero(int id,
+					 const std::string& name,
+					 int level,
+					 const BattleAttr& attr,
+					 int normalSkillId,
+					 int rageSkillId,
+					 std::initializer_list<int> extraSkills = {})
+{
+	Character hero(id, name, level, 1);
+	hero.originAttr = attr;
+	hero.baseAttr = attr;
+	hero.setSkill(GET_SKILL(normalSkillId));
+	hero.setSkill(GET_SKILL(rageSkillId));
+	for (int skillId : extraSkills) {
+		hero.setSkill(GET_SKILL(skillId));
+	}
+	hero.recalculateAttr();
+	return hero;
+}
 
-constexpr char kDefaultHost[] = "127.0.0.1";
-constexpr char kDefaultPort[] = "8080";
+void registerTeam(Player& player, const std::vector<Character>& roster)
+{
+	for (const auto& hero : roster) {
+		if (!player.addCharacter(hero)) {
+			continue;
+		}
+		player.addToBattleTeam(hero.id);
+		if (!player.mainCharacter) {
+			player.mainCharacter = player.getCharacter(hero.id);
+		}
+	}
+}
 
-class ClientApplication {
-public:
-    ClientApplication()
-        : m_client(kDefaultHost, kDefaultPort)
-        , m_running(false)
-        , m_messageThreadRunning(false)
-    {
-    }
-
-    int run() {
-        if (!initialize()) {
-            return EXIT_FAILURE;
-        }
-
-        // 启动消息处理线程
-        startMessageProcessThread();
-        
-        // 运行游戏主循环
-        runGameLoop();
-        
-        shutdown();
-        return EXIT_SUCCESS;
-    }
-
-private:
-    bool initialize() {
-        if (!m_client.connect()) {
-            std::cerr << "[App] Failed to connect to server." << std::endl;
-            return false;
-        }
-
-        m_client.startReceiveThread();
-        m_running = true;
-        return true;
-    }
-
-    // ========== 独立的消息处理线程 ==========
-    
-    void startMessageProcessThread()
-    {
-        m_messageThreadRunning = true;
-        m_messageThread = std::thread(&ClientApplication::messageProcessThreadFunc, this);
-        LOG_DEBUG("[App] Message processing thread started.");
-    }
-    
-    void messageProcessThreadFunc()
-    {
-        while (m_messageThreadRunning && m_client.isConnected()) {
-            // 处理所有待处理的消息
-            while (m_client.hasMessage()) {
-                std::string message = m_client.popMessage();
-                handleServerMessage(message);
-            }
-            
-            // 短暂休眠避免空转 CPU
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
-        std::cout << "[App] Message processing thread exiting." << std::endl;
-    }
-    
-    void handleServerMessage(const std::string& message)
-    {
-        LOG_DEBUG("[Network] Processing: %s", message.c_str());
-        
-        // ⚠️ 注意：这里需要线程安全地更新游戏状态
-        std::lock_guard<std::mutex> lock(m_gameStateMutex);
-        
-    }
-
-    // ========== 游戏主循环 ==========
-    
-    void runGameLoop()
-    {
-        // 创建游戏窗口，控制权交给QT
-        using namespace std::chrono;
-        const auto frameDuration = milliseconds(16);
-
-        LOG_DEBUG("[App] Entering game loop...");
-        while (m_running && m_client.isConnected()) {
-            auto frameStart = steady_clock::now();
-            
-            
-            // 帧率控制
-            auto elapsed = duration_cast<milliseconds>(steady_clock::now() - frameStart);
-            if (elapsed < frameDuration) {
-                std::this_thread::sleep_for(frameDuration - elapsed);
-            }
-        }
-    }
-    
-    void shutdown() {
-        m_running = false;
-        m_messageThreadRunning = false;
-        
-        // 等待消息处理线程结束
-        if (m_messageThread.joinable()) {
-            m_messageThread.join();
-        }
-        
-        m_client.stopReceiveThread();
-        m_client.disconnect();
-    }
-
-    NetworkClient m_client;
-    bool m_running;
-    
-    // 消息处理线程
-    std::thread m_messageThread;
-    std::atomic<bool> m_messageThreadRunning;
-    
-    // 游戏状态保护锁
-    std::mutex m_gameStateMutex;
-};
+std::string toString(BattleManager::Result result)
+{
+	switch (result) {
+		case BattleManager::Result::WIN: return "胜利";
+		case BattleManager::Result::LOSE: return "失败";
+		case BattleManager::Result::DRAW: return "平局";
+		default: return "进行中";
+	}
+}
 
 } // namespace
 
 int main()
 {
-    ClientApplication app;
-    return app.run();
+	auto logFn = [](const std::string& msg) {
+		std::cout << msg << std::endl;
+	};
+
+	Player user(1, "青龙军");
+	Player enemy(2, "白虎军");
+
+	std::vector<Character> userRoster = {
+		createHero(1001, "关羽", 50, BattleAttr(6200, 420, 190, 105), 1, 101, {601}),
+		createHero(1002, "张飞", 48, BattleAttr(6800, 360, 230, 95), 1, 105, {602}),
+		createHero(1003, "赵云", 49, BattleAttr(5800, 410, 180, 115), 1, 103, {603})
+	};
+
+	std::vector<Character> enemyRoster = {
+		createHero(2001, "吕布", 52, BattleAttr(6500, 450, 200, 100), 2, 106, {601, 606}),
+		createHero(2002, "董卓", 47, BattleAttr(7000, 340, 260, 90), 3, 401, {602}),
+		createHero(2003, "贾诩", 50, BattleAttr(5400, 380, 170, 110), 4, 502, {604})
+	};
+
+	registerTeam(user, userRoster);
+	registerTeam(enemy, enemyRoster);
+
+	BattleManager battle(&user, &enemy, logFn);
+	BattleManager::Result result = battle.runBattle();
+
+	std::cout << "==============================\n";
+	std::cout << "战斗结束，结果：" << toString(result)
+			  << "，共经历 " << battle.getRound() << " 回合" << std::endl;
+
+	return 0;
 }
