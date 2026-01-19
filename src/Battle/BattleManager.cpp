@@ -646,14 +646,19 @@ vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, Targ
 BattleCharacter* BattleManager::selectEnemyTarget(BattleCharacter* caster,
     vector<BattleCharacter>& enemies)
 {
-    // 优先选择同Id的敌人，否则随机
-    if (enemies[abs(caster->battleId)].isAlive) {
-        return &enemies[abs(caster->battleId)];
-    } else {
-        return selectRandomAlive(enemies);
+    // 优先选择镜像位置（battleId 取反）的敌人，找不到再随机
+    const int mirrorId = -caster->battleId;
+    auto mirrorIt = unitMap.find(mirrorId);
+    if (mirrorIt != unitMap.end()) {
+        BattleCharacter* candidate = mirrorIt->second;
+        if (candidate && candidate->isAlive &&
+            ((caster->battleId > 0 && candidate->battleId < 0) ||
+             (caster->battleId < 0 && candidate->battleId > 0))) {
+            return candidate;
+        }
     }
-    
-    return nullptr;
+
+    return selectRandomAlive(enemies);
 }
 
 BattleCharacter* BattleManager::selectRandomAlive(vector<BattleCharacter>& team)
