@@ -1,0 +1,3 @@
+id,needType,needValue,name,description,effectsAttributes,effects
+1,0,100,血瓶,恢复30体力值,0,50
+2,0,200,口服液,恢复魔法值30点,1,30

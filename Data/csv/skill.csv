@@ -1,0 +1,4 @@
+id,name,description,SkillType,TargetType,EffectType,effectValue(%),subSkills,
+0,"攻击","进行一次普通攻击",0,2,0,100,-1,
+1,"全体攻击","对所有敌人进行攻击",0,4,0,75,-1,
+2,"火球术","发射一个火球攻击敌人",0,3,0,10,-1,

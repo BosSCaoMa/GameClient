@@ -1,0 +1,3 @@
+id,name,hp,attack,magicAttack,phyDefense,speed,magDefense,critRate,critDamage,decritRate,dodgeRate,skills
+0,诸葛亮,1000,150,300,50,120,80,0,15,5,0,"[101,102]"
+1,关羽,1500,250,100,100,90,60,15,14,10,5,"[201,202]"
