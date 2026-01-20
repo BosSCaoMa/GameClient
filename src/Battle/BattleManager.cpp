@@ -276,6 +276,9 @@ void BattleManager::executeAction(BattleCharacter* actor)
 
 void BattleManager::executeSkill(BattleCharacter* caster, Skill* skill)
 {
+    if (skill->HasOnTrigger()) {
+        skill->onTrigger(caster, this);
+    }
     for (const SkillEffect& effect : skill->effects) {
         executeEffect(caster, effect, skill->id);
     }

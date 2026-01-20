@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include "SkillEffect.h"
-
+#include <functional>
 // ==================== Buff实例 ====================
 struct Buff {
     EffectType type; // Buff类型
@@ -21,6 +21,8 @@ struct Buff {
 };
 
 // ==================== 技能 ====================
+class BattleManager; // 前向声明
+class BattleCharacter; // 前向声明
 class Skill {
 public:
     int id = 0;
@@ -30,6 +32,15 @@ public:
     SkillTrigger trigger; // 触发时机
     std::vector<SkillEffect> effects; // 效果列表
     
+    using CallbackFunc = std::function<void(BattleCharacter*, BattleManager*)>;
+    bool HasOnTrigger() const {
+        if (onTrigger) {
+            return true;
+        }
+        return false;
+    }
+    CallbackFunc onTrigger; // 触发回调（可选）
+
     Skill() = default;
     
     Skill(int id, const std::string& name, SkillTrigger trigger)
@@ -38,5 +49,9 @@ public:
     Skill& addEffect(const SkillEffect& effect) {
         effects.push_back(effect);
         return *this;
+    }
+
+    void setOnTrigger(CallbackFunc cb) {
+        onTrigger = cb;
     }
 };
