@@ -20,7 +20,7 @@ struct SkillEffect {
     static SkillEffect DamageByTargetHp(TargetType t, int64_t hpPercent, int ch = 100);
     static SkillEffect DamageByLostHp(TargetType t, int64_t lostHpPercent, int ch = 100);
     
-    static SkillEffect Heal(TargetType t, int64_t hpPercent, int ch = 100);
+    static SkillEffect Heal_T_HP(TargetType t, int64_t hpPercent, int ch = 100);
     static SkillEffect HealByAtk(TargetType t, int64_t atkPercent, int ch = 100);
     static SkillEffect HealFixed(TargetType t, int64_t value, int ch = 100);
     
@@ -37,8 +37,7 @@ struct SkillEffect {
     static SkillEffect ShieldByAtk(TargetType t, int64_t atkPercent, int dur = 99, int ch = 100);
     static SkillEffect ShieldFixed(TargetType t, int64_t value, int dur = 99, int ch = 100);
     
-    static SkillEffect RageAdd(TargetType t, int64_t amount, int ch = 100);
-    static SkillEffect RageReduce(TargetType t, int64_t amount, int ch = 100);
+    static SkillEffect RageChange(TargetType t, int64_t amount, int ch = 100);
     
     static SkillEffect Revive(TargetType t, int64_t hpPercent, int ch = 100);
     static SkillEffect Dispel(TargetType t, int64_t count = 99, int ch = 100);

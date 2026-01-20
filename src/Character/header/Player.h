@@ -60,8 +60,7 @@ public:
     // ==================== 角色系统 ====================
     Character* mainCharacter = nullptr;        // 主角（可选）
     std::map<int, Character> characters;       // 拥有的武将 <武将ID, 武将对象>
-    std::vector<int> battleTeam;               // 上阵武将ID（最多5个）
-    
+    std::vector<int> battleTeam;             // 最多6个位置,id = 0代表空位
     uint64_t combatPower = 0;                  // 总战力
     
     // ==================== 背包系统 ====================

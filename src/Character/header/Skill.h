@@ -40,6 +40,9 @@ public:
         return false;
     }
     CallbackFunc onTrigger; // 触发回调（可选）
+    void setOnTrigger(CallbackFunc cb) { // 设置技能回调函数
+        onTrigger = cb;
+    }
 
     Skill() = default;
     
@@ -49,9 +52,5 @@ public:
     Skill& addEffect(const SkillEffect& effect) {
         effects.push_back(effect);
         return *this;
-    }
-
-    void setOnTrigger(CallbackFunc cb) {
-        onTrigger = cb;
     }
 };

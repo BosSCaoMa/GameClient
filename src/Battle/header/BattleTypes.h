@@ -8,9 +8,9 @@
 enum class TargetType {
     // 基础阵营类型（保留原有核心类型，统一命名风格）
     SELF = 0,               // 自己
-    ALLY_SINGLE = 1,        // 己方单个目标（替代原FRIEND，语义更精准）
-    ALLY_ALL = 2,           // 己方全体（替代原ALLY）
-    ENEMY_SINGLE = 3,       // 敌方单个目标（替代原ENEMY）
+    ALLY_ALL = 1,           // 己方全体（替代原ALLY）
+    ENEMY_SINGLE = 2,       // 敌方单个目标（同位置）
+    ENEMY_COL = 3,          // 敌方一列
     ENEMY_ALL = 4,          // 敌方全体（保留原ALL_ENEMY，统一命名）
 
     // 按站位区分（前/后排）
@@ -129,9 +129,8 @@ inline bool IsDebuff(EffectType type, int64_t value)
 inline bool IsControlEffect(EffectType type)
 {
     return type == EffectType::STUN ||
-        type == EffectType::SILENCE ||
-        type == EffectType::FREEZE ||
-        type == EffectType::TAUNT;
+        type == EffectType::SILENCE || type == EffectType::FREEZE ||
+        type == EffectType::TAUNT || type == EffectType::INJURY;
 }
 
 // ==================== 技能触发时机 ====================
@@ -157,6 +156,24 @@ enum class SkillTrigger
     None          // 无触发
 };
 
+enum class QualityType {
+    WHITE = 1,      // 白色 - 普通
+    GREEN = 2,      // 绿色 - 优秀
+    BLUE = 3,       // 蓝色 - 精良
+    PURPLE = 4,     // 紫色 - 史诗
+    ORANGE = 5,     // 橙色 - 传说
+    RED = 6,        // 红色 - 神话
+    GOLD = 7,       // 金色 - 传世
+};
+
+
+
+
+
+
+
+
+// 暂未用到
 enum class PlayerAttrType {
     STAMINA = 1, // 体力
     ENERGY = 2, // 精力

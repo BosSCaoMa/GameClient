@@ -22,22 +22,13 @@ enum class EquipmentType {
     WEAPON = 0,     // 武器
     ARMOR,          // 盔甲
     HELMET,         // 头盔
-    BOOTS,          // 鞋子
+    BOOTS,          // 战靴
+
     STEED,         // 坐骑
     TALLY,         // 兵符
     TREASURE,      // 法宝
     FAMOUS,        // 名将
     COUNT           // 装备栏数量
-};
-
-enum class EquipmentQuality {
-    WHITE = 1,      // 白色 - 普通
-    GREEN = 2,      // 绿色 - 优秀
-    BLUE = 3,       // 蓝色 - 精良
-    PURPLE = 4,     // 紫色 - 史诗
-    ORANGE = 5,     // 橙色 - 传说
-    RED = 6,        // 红色 - 神话
-    GOLD = 7,       // 金色 - 传世
 };
 
 // ==================== 装备词缀类型 ====================

@@ -114,7 +114,7 @@ private:
     // 战斗队伍（副本）
     std::vector<BattleCharacter> userTeam_;
     std::vector<BattleCharacter> enemyTeam_;
-    std::unordered_map<int, BattleCharacter*> unitMap;
+    std::unordered_map<int, BattleCharacter*> unitMap; // battleId -> BattleCharacter*
     // 行动顺序
     std::vector<BattleCharacter*> actionOrder_;
     std::array<std::vector<BattleCharacter*>, static_cast<size_t>(SkillTrigger::None) + 1> triggerBuckets_;

@@ -29,29 +29,33 @@ struct ItemTemplate {
 };
 
 // ==================== 装备模板 ====================
+// 当前与Equipment基本相同，但是后续可能添加一些培养属性
 struct EquipmentTemplate {
     int id;
     std::string name;
     EquipmentType type;
-    EquipmentQuality quality;
+    QualityType quality;
+    BattleAttr baseAttrs;
 
-    std::vector<EquipmentAffix> mainAffixs;
     int skillId;
-    
     int setId;
     
     EquipmentTemplate() = default;
     EquipmentTemplate(int id, const std::string& name_, EquipmentType type_, 
-        EquipmentQuality quality_, int skillId_ = 0, int setId_ = 0)
+        QualityType quality_, int skillId_ = 0, int setId_ = 0)
         : id(id), name(name_), type(type_), quality(quality_)
         , skillId(skillId_), setId(setId_) {}
 };
 
 // ==================== 物品配置管理器 ====================
 class ItemConfig {
+private:
+    std::unordered_map<int, ItemTemplate> items_;
+    std::unordered_map<int, EquipmentTemplate> equipments_;
+    std::unordered_map<int, SetBonus> setBonuses_;
 public:
     using ET = EquipmentType;
-    using EQ = EquipmentQuality;
+    using EQ = QualityType;
     using AT = AffixType;
 
     static ItemConfig& instance() {
@@ -105,10 +109,6 @@ private:
     void initTallys();
     void initTreasures();
     void initFamouss();
-    
-    std::unordered_map<int, ItemTemplate> items_;
-    std::unordered_map<int, EquipmentTemplate> equipments_;
-    std::unordered_map<int, SetBonus> setBonuses_;
 };
 
 #define GET_ITEM(id) ItemConfig::instance().getItem(id)

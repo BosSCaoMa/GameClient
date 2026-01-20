@@ -6,7 +6,7 @@
 #include <string>
 
 // ==================== 装备词缀 ====================
-struct EquipmentAffix {
+struct EquipmentAffix { // 暂不使用
     AffixType type;
     int64_t value;
     
@@ -21,12 +21,12 @@ struct Equipment {
     int id;
     std::string name;
     EquipmentType type;
-    EquipmentQuality quality;
+    QualityType quality;
     
     // 词缀(主词缀+副词缀-随机生成)
-    std::vector<EquipmentAffix> mainAffixs;
-    std::vector<EquipmentAffix> subAffixes;
-    
+    // std::vector<EquipmentAffix> mainAffixs;
+    // std::vector<EquipmentAffix> subAffixes;
+    BattleAttr baseAttrs; // 装备基础属性加成
     int skillId;  // 装备携带的技能ID列表
     // 套装ID
     int setId;
@@ -34,18 +34,15 @@ struct Equipment {
     Equipment() = default;
     
     Equipment(int id_, const std::string& name_, EquipmentType type_, 
-              EquipmentQuality quality_, int skill = 0, int setId_ = 0)
+              QualityType quality_, int skill = 0, int setId_ = 0)
         : id(id_), name(name_), type(type_), quality(quality_),
             skillId(skill), setId(setId_) {}
 
     bool hasSkill() const { return skillId != 0; }
 
     // 传入角色的基础属性，返回装备加成的属性
-    BattleAttr calculateTotalAttr(const BattleAttr& charAttr) const;
-    std::string GetDescription() const {return name;} // TODO 完善描述;
-private:
-     // 应用单个词缀到属性上
-    static void applyAffix(BattleAttr& total, const BattleAttr& charAttr, const EquipmentAffix& affix);
+    // BattleAttr calculateTotalAttr(const BattleAttr& charAttr) const;
+    std::string GetDescription() const {return name;} // NTODO 完善描述;
 };
 
 // ==================== 套装效果 ====================

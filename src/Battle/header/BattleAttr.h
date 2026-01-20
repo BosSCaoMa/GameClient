@@ -5,11 +5,11 @@
 // BattleAttr.h
 struct BattleAttr {   // 相互关联 【 AffixType applyAffix 】 【 EffectType applyEffect 】【 BattleAttr 】
     // 基础属性
-    int64_t hp = 100;
-    int64_t maxHp = 100;
-    int64_t atk = 10;
-    int64_t def = 1;
-    int64_t speed = 5;
+    int64_t hp = 10000;
+    int64_t maxHp = 10000;
+    int64_t atk = 1000;
+    int64_t def = 100;
+    int64_t speed = 300;
     
     // 战斗属性
     int16_t critRate = 0;       // 暴击率 (百分比)
@@ -17,7 +17,7 @@ struct BattleAttr {   // 相互关联 【 AffixType applyAffix 】 【 EffectTyp
     int16_t critResist = 0;    // 暴击抗性 (百分比)
     int16_t hitRate = 100;      // 命中率 (默认100%)
     int16_t dodgeRate = 0;      // 闪避率
-    int16_t rage = 0;        // 基础怒气值
+    int16_t rage = 2;        // 基础怒气值
 
     // ========== 扩展属性（可选） ==========
     int16_t damageBonus = 0;        // 伤害加成 (百分比)
@@ -83,5 +83,12 @@ struct BattleAttr {   // 相互关联 【 AffixType applyAffix 】 【 EffectTyp
 
         return *this;
     }
+    static BattleAttr warriorAttrs(); // 战士属性模板
+    static BattleAttr mageAttrs();   // 法师属性模板
+    static BattleAttr tankAttrs();  // 坦克属性模板
+    static BattleAttr healerAttrs(); // 辅助属性模板
+    static BattleAttr assassinAttrs(); // 刺客属性模板
+    void ExPandByQuality(QualityType quality);
+    void upgradeByLevel(int level); // 根据等级提升属性
 };
 

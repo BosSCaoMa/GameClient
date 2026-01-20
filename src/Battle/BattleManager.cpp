@@ -40,39 +40,28 @@ void BattleManager::initBattle()
     log("战斗开始");
 }
 
-void BattleManager::createBattleCharacters() {
-    
-    // 己方主角
-    int battleId = 1;
-    if (userPlayer_->mainCharacter) {
-        userTeam_.push_back(BattleCharacter(
-            userPlayer_->mainCharacter, battleId++));
-    }
-    
-    // 己方武将
-    for (size_t i = 0; i < userPlayer_->battleTeam.size() && i < 5; ++i) {
+void BattleManager::createBattleCharacters()
+{
+    int idx = 1;
+    for (int i = 0; i < static_cast<int>(userPlayer_->battleTeam.size()); ++i) {
         int charId = userPlayer_->battleTeam[i];
-        auto it = userPlayer_->characters.find(charId);
-        if (it != userPlayer_->characters.end()) {
-            userTeam_.push_back(BattleCharacter(
-                &it->second, battleId++));
+        if (charId == 0) {
+            continue;
+        }
+        Character* ch = userPlayer_->getCharacter(charId);
+        if (ch) {
+            userTeam_.emplace_back(ch, idx++);
         }
     }
-    
-    // 敌方主角（负ID）
-    battleId = -1;
-    if (enemyPlayer_->mainCharacter) {
-        enemyTeam_.push_back(BattleCharacter(
-            enemyPlayer_->mainCharacter, battleId--));
-    }
-    
-    // 敌方武将
-    for (size_t i = 0; i < enemyPlayer_->battleTeam.size() && i < 5; ++i) {
+    idx = 1;
+    for (int i = 0; i < static_cast<int>(enemyPlayer_->battleTeam.size()); ++i) {
         int charId = enemyPlayer_->battleTeam[i];
-        auto it = enemyPlayer_->characters.find(charId);
-        if (it != enemyPlayer_->characters.end()) {
-            enemyTeam_.push_back(BattleCharacter(
-                &it->second, battleId--));
+        if (charId == 0) {
+            continue;
+        }
+        Character* ch = enemyPlayer_->getCharacter(charId);
+        if (ch) {
+            enemyTeam_.emplace_back(ch, -idx++);
         }
     }
 }
@@ -144,7 +133,7 @@ BattleManager::Result BattleManager::executeRound()
     log("----- 回合 " + to_string(round_) + " 开始 -----");
     // 1. 回合开始阶段
     onRoundStart();
-    
+
     // 2. 计算行动顺序
     calculateActionOrder();
     
@@ -555,10 +544,7 @@ vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, Targ
         // ===== 基础目标 =====
         case TargetType::SELF:
             return {caster};
-            
-        case TargetType::ALLY_SINGLE:
-            return {selectRandomAlive(allyTeam)};
-            
+             
         case TargetType::ALLY_ALL:
             for (auto& ch : allyTeam) {
                 if (ch.isAlive) targets.push_back(&ch);
@@ -577,6 +563,9 @@ vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, Targ
             }
             return targets;
         
+        case TargetType::ENEMY_COL: 
+            // todo
+
         // ===== 前后排 =====
         case TargetType::ALLY_FRONT_ROW:
             for (auto& ch : allyTeam) {

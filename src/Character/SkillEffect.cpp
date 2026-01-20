@@ -32,8 +32,8 @@ SkillEffect SkillEffect::DamageByLostHp(TargetType t, int64_t lostHpPercent, int
 }
 
 // ==================== 2、治疗类实现 ====================
-SkillEffect SkillEffect::Heal(TargetType t, int64_t hpPercent, int ch) {
-    return {t, EffectType::HEAL, ValueType::PERCENT_MAX_HP, hpPercent, 0, ch};
+SkillEffect SkillEffect::Heal_T_HP(TargetType t, int64_t hpPercent, int ch) {
+    return {t, EffectType::HEAL, ValueType::PERCENT_TARGET_MAXHP, hpPercent, 0, ch};
 }
 
 SkillEffect SkillEffect::HealByAtk(TargetType t, int64_t atkPercent, int ch) {
@@ -75,15 +75,9 @@ SkillEffect SkillEffect::ShieldFixed(TargetType t, int64_t value, int dur, int c
 }
 
 // ==================== 6、怒气类实现 ====================
-SkillEffect SkillEffect::RageAdd(TargetType t, int64_t amount, int ch) {
+SkillEffect SkillEffect::RageChange(TargetType t, int64_t amount, int ch) {
     return {t, EffectType::RAGE_ADD, ValueType::FIXED, amount, 0, ch};
 }
-
-SkillEffect SkillEffect::RageReduce(TargetType t, int64_t amount, int ch) {
-    return {t, EffectType::RAGE_REDUCE, ValueType::FIXED, amount, 0, ch};
-}
-
-
 
 // ==================7、控制与反控制类实现 ======================
 // =====================【目标 - 等级 - 触发概率】=======================

@@ -68,16 +68,16 @@ void SkillConfig::initBaseSkills()
     // ==================== 治疗技能 (200-299) ====================
     
     reg(Skill(201, "甘霖普降", Tr::RAGE_SKILL)
-        .addEffect(SE::Heal(T::ALLY_ALL, 120)));
+        .addEffect(SE::Heal_T_HP(T::ALLY_ALL, 120)));
     
     reg(Skill(202, "妙手回春", Tr::RAGE_SKILL)
-        .addEffect(SE::Heal(T::ALLY_HP_LOW1, 300)));
+        .addEffect(SE::Heal_T_HP(T::ALLY_HP_LOW1, 300)));
     
     reg(Skill(203, "战地急救", Tr::RAGE_SKILL)
-        .addEffect(SE::Heal(T::ALLY_HP_LOW2, 200)));
+        .addEffect(SE::Heal_T_HP(T::ALLY_HP_LOW2, 200)));
     
     reg(Skill(204, "生命之泉", Tr::RAGE_SKILL)
-        .addEffect(SE::Heal(T::ALLY_ALL, 80))
+        .addEffect(SE::Heal_T_HP(T::ALLY_ALL, 80))
         .addEffect(SE::Buff(T::ALLY_ALL, E::BUFF_DEF, 15, 2)));
     
     // ==================== 辅助技能 (300-399) ====================
@@ -135,7 +135,7 @@ void SkillConfig::initBaseSkills()
         .addEffect(SE::Buff(T::SELF, E::BUFF_SPEED, 30, 99)));
     
     reg(Skill(604, "回合恢复", Tr::ROUND_START)
-        .addEffect(SE::Heal(T::SELF, 5)));
+        .addEffect(SE::Heal_T_HP(T::SELF, 5)));
     
     reg(Skill(606, "反击", Tr::ON_HIT)
         .addEffect(SE::Damage_PA(T::ENEMY_SINGLE, 50)));
@@ -146,11 +146,11 @@ void SkillConfig::initBaseSkills()
     // ==================== 特殊技能 (700-799) ====================
     
     reg(Skill(702, "怒气燃烧", Tr::RAGE_SKILL)
-        .addEffect(SE::RageAdd(T::ALLY_ALL, 2)));
+        .addEffect(SE::RageChange(T::ALLY_ALL, 2)));
     
     reg(Skill(703, "夺气", Tr::RAGE_SKILL)
         .addEffect(SE::Damage_PA(T::ENEMY_SINGLE, 100))
-        .addEffect(SE::RageReduce(T::ENEMY_SINGLE, 2)));
+        .addEffect(SE::RageChange(T::ENEMY_SINGLE, -2)));
 }
 
 void SkillConfig::initQunSkills()
