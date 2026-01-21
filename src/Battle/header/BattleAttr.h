@@ -46,49 +46,18 @@ struct BattleAttr {   // 相互关联 【 AffixType applyAffix 】 【 EffectTyp
         : hp(hp_), maxHp(hp_), atk(atk_), def(def_), speed(speed_) {}
     
     // 属性相加
-    BattleAttr& operator+=(const BattleAttr& other)
-    {
-        hp += other.hp;
-        maxHp += other.maxHp;
-        atk += other.atk;
-        def += other.def;
-        speed += other.speed;
+    BattleAttr& operator+=(const BattleAttr& other);
+    
+    void upgradeByLevel(int level); // 根据等级提升属性
+    uint64_t calculateCombatPower() const; // 计算战力值
 
-        critRate += other.critRate;
-        critResist += other.critResist;
-        critDamage += other.critDamage;
-        hitRate += other.hitRate;
-        dodgeRate += other.dodgeRate;
-        rage += other.rage;
-        
-        // ========== 扩展属性（可选） ==========
-        damageBonus += other.damageBonus;
-        damageReduction += other.damageReduction;
-        skillDamage += other.skillDamage;
-        
-        lifesteal += other.lifesteal;
-        counterRate += other.counterRate;
-        healBonus += other.healBonus;
-        mutiHitRate += other.mutiHitRate;
-
-        burnResist += other.burnResist;
-        stunResist += other.stunResist;
-        silenceResist += other.silenceResist;
-        poisonResist += other.poisonResist;
-        tauntResist += other.tauntResist;
-        injuryResist += other.injuryResist;
-        bleedResist += other.bleedResist;
-        curseResist += other.curseResist;
-        freezeResist += other.freezeResist;
-
-        return *this;
-    }
+    void InitAttrsByPosition(Position pos); // 根据定位初始化属性
+private:
+    void ExPandByQuality(QualityType quality); // 根据品质扩展属性
     static BattleAttr warriorAttrs(); // 战士属性模板
     static BattleAttr mageAttrs();   // 法师属性模板
     static BattleAttr tankAttrs();  // 坦克属性模板
     static BattleAttr healerAttrs(); // 辅助属性模板
     static BattleAttr assassinAttrs(); // 刺客属性模板
-    void ExPandByQuality(QualityType quality);
-    void upgradeByLevel(int level); // 根据等级提升属性
 };
 

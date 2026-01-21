@@ -42,19 +42,20 @@ void ItemConfig::initWeapons()
 {
     // ===== 武器 (20001-20999) =====
     {
-        EquipmentTemplate tmpl(20001, "青铜剑", ET::WEAPON, EQ::WHITE);
+        EquipmentTemplate tmpl(20002, "铁剑", ET::WEAPON, EQ::WHITE);
+        
+        regEquipment(tmpl);
+    }
+
+    {
+        EquipmentTemplate tmpl(20001, "青铜剑", ET::WEAPON, EQ::RED);
         
         regEquipment(tmpl);
     }
     
-    {
-        EquipmentTemplate tmpl(20002, "铁剑", ET::WEAPON, EQ::GREEN);
-        
-        regEquipment(tmpl);
-    }
     
     {
-        EquipmentTemplate tmpl(20003, "青龙偃月刀", ET::WEAPON, EQ::ORANGE);
+        EquipmentTemplate tmpl(20003, "青龙偃月刀", ET::WEAPON, EQ::RED);
         
         tmpl.setId = 1001;  // 蜀国套装
         regEquipment(tmpl);
@@ -127,7 +128,7 @@ void ItemConfig::initSetBonuses() {
             SetBonus::Bonus b;
             b.pieceCount = 2;
             b.desc = "攻击力 +10%";
-            b.affixes.push_back({AffixType::ATK_PERCENT, 10});
+            
             bonus.bonuses.push_back(b);
         }
         
@@ -136,8 +137,7 @@ void ItemConfig::initSetBonuses() {
             SetBonus::Bonus b;
             b.pieceCount = 4;
             b.desc = "暴击率 +10%, 暴击伤害 +20%";
-            b.affixes.push_back({AffixType::CRIT_RATE, 10});
-            b.affixes.push_back({AffixType::CRIT_DAMAGE, 20});
+            
             bonus.bonuses.push_back(b);
         }
         
@@ -155,7 +155,7 @@ void ItemConfig::initSetBonuses() {
             SetBonus::Bonus b;
             b.pieceCount = 2;
             b.desc = "生命值 +15%";
-            b.affixes.push_back({AffixType::HP_PERCENT, 15});
+            
             bonus.bonuses.push_back(b);
         }
         
@@ -164,8 +164,7 @@ void ItemConfig::initSetBonuses() {
             SetBonus::Bonus b;
             b.pieceCount = 4;
             b.desc = "防御力 +20%, 伤害减免 +10%";
-            b.affixes.push_back({AffixType::DEF_PERCENT, 20});
-            b.affixes.push_back({AffixType::DAMAGE_REDUCTION, 10});
+            
             bonus.bonuses.push_back(b);
         }
         

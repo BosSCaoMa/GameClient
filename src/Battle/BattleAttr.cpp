@@ -52,3 +52,45 @@ void BattleAttr::upgradeByLevel(int level)
     def += def * rate / 100 * level;
     speed += speed * rate / 100 * level;
 }
+
+BattleAttr& BattleAttr::operator+=(const BattleAttr& other)
+{
+    hp += other.hp;
+    maxHp += other.maxHp;
+    atk += other.atk;
+    def += other.def;
+    speed += other.speed;
+
+    critRate += other.critRate;
+    critDamage += other.critDamage;
+    critResist += other.critResist;
+    hitRate += other.hitRate;
+    dodgeRate += other.dodgeRate;
+    rage += other.rage;
+
+    damageBonus += other.damageBonus;
+    damageReduction += other.damageReduction;
+    skillDamage += other.skillDamage;
+
+    lifesteal += other.lifesteal;
+    counterRate += other.counterRate;
+    mutiHitRate += other.mutiHitRate;
+    healBonus += other.healBonus;
+
+    burnResist += other.burnResist;
+    stunResist += other.stunResist;
+    silenceResist += other.silenceResist;
+    poisonResist += other.poisonResist;
+    tauntResist += other.tauntResist;
+    injuryResist += other.injuryResist;
+    bleedResist += other.bleedResist;
+    curseResist += other.curseResist;
+    return *this;
+}
+
+uint64_t BattleAttr::calculateCombatPower() const
+{
+    uint64_t power = 0;
+    // todo
+    return power;
+}

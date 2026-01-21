@@ -2,11 +2,10 @@
 #include <vector>
 #include <string>
 
-#include "BattleManager.h"
 #include "Player.h"
 #include "SkillConfig.h"
 #include "CharacterConfig.h"
-
+#include "BattleManager.h"
 namespace {
 
 Character createHero(int id,

@@ -166,7 +166,13 @@ enum class QualityType {
     GOLD = 7,       // 金色 - 传世
 };
 
-
+enum class Position {
+    WARRIOR,
+    MAGE,
+    TANK,
+    HEALER,
+    ASSASSIN
+};
 
 
 

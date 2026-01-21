@@ -12,29 +12,17 @@
 struct CharacterTemplate {
     int id;
     std::string name;
-    int quality;                    // 品质 1-5
-    
-    // ===== 属性成长 =====
-    BattleAttr baseAttr;            // 1级基础属性
-    BattleAttr growthAttr;          // 每级成长属性
-    
+    QualityType quality; 
+    Position position;
     // ===== 技能 =====
-    std::vector<int> skillIds;      // 技能ID列表 [普通攻击, 怒气技能, 开局技能...]
+    std::vector<int> skillIds;      // 技能ID列表
     
-    // ===== 新增：经验/突破配置 ===== ⭐
-    int64_t baseExp = 100;          // 1级升2级所需经验
-    double expGrowthRate = 1.5;     // 经验成长系数（exp = baseExp * level^expGrowthRate）
-    int maxBreakthrough = 10;       // 最大突破次数
-    int levelPerBreakthrough = 10;  // 每次突破提升等级上限
+    CharacterTemplate() : id(0), quality(QualityType::WHITE) {}
     
-    CharacterTemplate() : id(0), quality(1) {}
-    
-    CharacterTemplate(int id_, const std::string& name_, int quality_,
-                      const BattleAttr& base_, const BattleAttr& growth_,
-                      std::initializer_list<int> skills_)
+    CharacterTemplate(int id_, const std::string& name_, QualityType quality_,
+        Position position, std::initializer_list<int> skills_)
         : id(id_), name(name_), quality(quality_)
-        , baseAttr(base_), growthAttr(growth_)
-        , skillIds(skills_) {}
+        , position(position), skillIds(skills_) {}
 };
 
 // ==================== 武将配置管理器 ====================
@@ -51,11 +39,9 @@ public:
         return it != templates_.end() ? &it->second : nullptr;
     }
     
-    // ===== 创建武将实例 ===== ⭐ 更新签名
-    Character create(int charId, int level = 1, int star = 1, int breakthrough = 0) const;
     
-    // ===== 新增：计算指定等级的属性 ===== ⭐
-    BattleAttr calculateAttrForLevel(int charId, int level, int star = 1, int breakthrough = 0) const;
+    // ===== 创建武将实例 ===== ⭐ 更新签名
+    Character create(int charId) const;
     
     // 注册武将模板
     void reg(const CharacterTemplate& tmpl) {

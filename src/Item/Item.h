@@ -46,6 +46,7 @@ struct Equipment {
 };
 
 // ==================== 套装效果 ====================
+class Skill; // 前向声明
 struct SetBonus {
     int setId;
     std::string name;
@@ -53,7 +54,8 @@ struct SetBonus {
     struct Bonus {
         int pieceCount;     // 需要件数
         std::string desc;
-        std::vector<EquipmentAffix> affixes;
+        int skillId;        // 套装技能ID（可选）
+        BattleAttr applyAttr; // 套装属性加成
     };
     
     std::vector<Bonus> bonuses;  // 2件套、4件套、6件套等
