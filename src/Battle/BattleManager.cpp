@@ -312,8 +312,8 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
             log("  - " + target->name + " 受到 " + to_string(damage) + " 点伤害 (剩余HP: " +
                 to_string(target->currentAttr.hp) + ")");
 
-            if (damage > 0 && caster->currentAttr.mutiHitRate > 0) {
-                if (rollChance(caster->currentAttr.mutiHitRate)) {
+            if (damage > 0 && caster->currentAttr.multiHitRate > 0) {
+                if (rollChance(caster->currentAttr.multiHitRate)) {
                     log("    连击触发，" + caster->name + " 进行额外一次攻击！");
                     applyEffect(caster, target, effect, skillId);
                 }

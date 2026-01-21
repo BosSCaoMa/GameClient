@@ -1,7 +1,44 @@
 #include "BattleAttr.h"
-#include <vector>
+#include <cstddef>
+#include <cstdint>
 
-using namespace std;
+namespace {
+constexpr int kQualityExpandRates[] = {0, 15, 40, 80, 100, 150, 200, 300};
+constexpr std::size_t kQualityExpandRatesCount = sizeof(kQualityExpandRates) / sizeof(kQualityExpandRates[0]);
+constexpr int kLevelGrowthPercent = 3; // 每级统一成长百分比
+
+constexpr int qualityRate(QualityType quality)
+{
+    const auto index = static_cast<std::size_t>(quality);
+    return index < kQualityExpandRatesCount ? kQualityExpandRates[index] : kQualityExpandRates[0];
+}
+} // namespace
+void BattleAttr::InitAttr(Position pos, QualityType quality)
+{
+    BattleAttr attrs;
+    switch (pos) {
+        case Position::WARRIOR:
+            attrs = warriorAttrs();
+            break;
+        case Position::MAGE:
+            attrs = mageAttrs();
+            break;
+        case Position::TANK:
+            attrs = tankAttrs();
+            break;
+        case Position::HEALER:
+            attrs = healerAttrs();
+            break;
+        case Position::ASSASSIN:
+            attrs = assassinAttrs();
+            break;
+        default:
+            attrs = BattleAttr(); // 默认属性
+            break;
+    }
+    *this = attrs;
+    ExPandByQuality(quality);
+}
 BattleAttr BattleAttr::warriorAttrs()
 {
     BattleAttr attrs(15000, 1200, 200,350);
@@ -34,23 +71,25 @@ BattleAttr BattleAttr::assassinAttrs()
 
 void BattleAttr::ExPandByQuality(QualityType quality)
 {
-    vector<int> expandRates = {0, 15, 40, 80, 100, 150, 200, 300}; // 从白色到金色的扩展百分比
-    int rate = expandRates[static_cast<int>(quality)];
-    hp += hp * rate / 100;
-    maxHp += maxHp * rate / 100;
-    atk += atk * rate / 100;
-    def += def * rate / 100;
-    speed += speed * rate / 100;
+    const int rate = qualityRate(quality);
+    auto scale = [rate](Scalar& value) {
+        value += value * rate / 100;
+    };
+
+    scale(hp);
+    scale(maxHp);
+    scale(atk);
+    scale(def);
+    scale(speed);
 }
 
 void BattleAttr::upgradeByLevel(int level)
 {
-    int rate = 3; // 每级提升百分比
-    hp += hp * rate / 100 * level;
-    maxHp += maxHp * rate / 100 * level;
-    atk += atk * rate / 100 * level;
-    def += def * rate / 100 * level;
-    speed += speed * rate / 100 * level;
+    hp += hp * kLevelGrowthPercent / 100 * level;
+    maxHp += maxHp * kLevelGrowthPercent / 100 * level;
+    atk += atk * kLevelGrowthPercent / 100 * level;
+    def += def * kLevelGrowthPercent / 100 * level;
+    speed += speed * kLevelGrowthPercent / 100 * level;
 }
 
 BattleAttr& BattleAttr::operator+=(const BattleAttr& other)
@@ -74,23 +113,19 @@ BattleAttr& BattleAttr::operator+=(const BattleAttr& other)
 
     lifesteal += other.lifesteal;
     counterRate += other.counterRate;
-    mutiHitRate += other.mutiHitRate;
+    multiHitRate += other.multiHitRate;
     healBonus += other.healBonus;
 
-    burnResist += other.burnResist;
-    stunResist += other.stunResist;
-    silenceResist += other.silenceResist;
-    poisonResist += other.poisonResist;
-    tauntResist += other.tauntResist;
-    injuryResist += other.injuryResist;
-    bleedResist += other.bleedResist;
-    curseResist += other.curseResist;
+    for (std::uint8_t idx = 0; idx < static_cast<std::uint8_t>(Resistance::Count); ++idx) {
+        const auto resistanceType = static_cast<Resistance>(idx);
+        resistance(resistanceType) += other.getResistance(resistanceType);
+    }
     return *this;
 }
 
-uint64_t BattleAttr::calculateCombatPower() const
+std::uint64_t BattleAttr::calculateCombatPower() const
 {
-    uint64_t power = 0;
+    std::uint64_t power = 0;
     // todo
     return power;
 }

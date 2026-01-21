@@ -14,11 +14,12 @@ public:
     int id;
     int relid; // 关联角色id，用于触发合击技能
     std::string name;
-    
-    int level;
-    int star;           // 星级 1-5
     QualityType quality;        // 品质 1-5
     Position position;    // 定位（战士/法师/坦克/辅助/刺客）
+
+    int level;
+    int star;           // 星级 1-5
+    
     // ==================== 属性 ====================
     BattleAttr originAttr;        // 基础属性（等级/星级/突破成长）
     BattleAttr baseAttr;     // 当前属性（基础 + 装备 + Buff）
@@ -36,7 +37,9 @@ public:
     
     // ==================== 构造函数 ====================
     Character();
-    Character(int id_, const std::string& name_, int level_ = 1, int star_ = 1);
+    Character(int id_, const std::string& name_, QualityType quality_, Position position_)
+        : id(id_), name(name_), quality(quality_), position(position_),
+          level(1), star(1), exp(0), breakthrough(0) {};
     
     // ==================== 技能管理 ====================
     void setSkill(const Skill& skill);

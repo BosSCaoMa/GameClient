@@ -54,31 +54,31 @@ bool BattleCharacter::BuffIsOffset(EffectType type) const
     int resistValue = 0;
     switch (type) {
         case EffectType::STUN:
-            resistValue = currentAttr.stunResist;;
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Stun);
             break;
         case EffectType::FREEZE:
-            resistValue = currentAttr.freezeResist;
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Freeze);
             break;
         case EffectType::SILENCE:
-            resistValue = currentAttr.silenceResist;
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Silence);
             break;
         case EffectType::TAUNT:
-            resistValue = currentAttr.tauntResist;
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Taunt);
             break;
         case EffectType::INJURY:
-            resistValue = currentAttr.injuryResist;
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Injury);
             break;
         case EffectType::POISON:
-            resistValue = currentAttr.poisonResist;
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Poison);
             break;
         case EffectType::BURN:
-            resistValue = currentAttr.burnResist;
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Burn);
             break;
         case EffectType::BLEED:
-            resistValue = currentAttr.bleedResist;
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Bleed);
             break;
         case EffectType::CURSE:
-            resistValue = currentAttr.curseResist;
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Curse);
             break;
         default:
             return false;
