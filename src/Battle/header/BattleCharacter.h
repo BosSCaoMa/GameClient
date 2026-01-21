@@ -7,9 +7,9 @@
 class BattleCharacter {
 public:
     Character* original;        // 原始角色
-    int battleId;               // 战斗中ID（正数己方，负数敌方），0-2前排，3-5后排
+    int battleId;               // 战斗中ID（正数己方，负数敌方）
     bool isInFrontRow() const {
-        return std::abs(battleId) <= 2;
+        return std::abs(battleId) <= 3;
     }
 
     std::string name;
@@ -24,7 +24,7 @@ public:
     bool isAlive = true;     // 是否存活
     bool hasActed = false;     // 本回合是否已行动
     int64_t shieldValue = 0;    // 护盾值
-    
+    // int64_t longqiShieledValue = 0; // 龙骑护盾值
 public:
     BattleCharacter(Character* ch, int battleId);
 
@@ -64,7 +64,7 @@ public:
     
     Skill* getNormalAttack();
     
-    Skill* getRageSkill();
+    Skill* GetAction();
 
 private:
     bool hasBuffOfType(EffectType type) const;

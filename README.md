@@ -189,7 +189,7 @@ BattleManager::executeAction(BattleCharacter* actor)
 │
 ├── 3. 选择技能
 │       │
-│       ├── skill = actor->getRageSkill()  // 优先怒气技能
+│       ├── skill = actor->GetAction()  // 优先怒气技能
 │       │       │
 │       │       └── 检查怒气是否足够、是否冷却完毕
 │       │
@@ -277,7 +277,7 @@ BattleManager::applyEffect(caster, target, effect, skillId)
     │       ├── calculateHeal()                             │
     │       └── target->heal(amount)                        │
     │                                                       │
-    ├── RAGE_ADD / RAGE_REDUCE ─────────────────────────────┤
+    ├── RAGE_CHANGE / RAGE_REDUCE ─────────────────────────────┤
     │       │                                               │
     │       └── target->addRage(±amount)                    │
     │                                                       │

@@ -64,8 +64,7 @@ enum class EffectType {
     PIERCE,             // 穿透（伤害无视护盾/部分减伤）
     TRUE_DAMAGE,        // 真实伤害（无视防御/减伤/抗性，直接生效）
     HEAL,               // 治疗
-    RAGE_ADD,           // 增加怒气
-    RAGE_REDUCE,        // 减少怒气
+    RAGE_CHANGE,           // 增加怒气
 
     // 护盾
     SHIELD,             // 护盾
@@ -146,6 +145,10 @@ enum class SkillTrigger
     ROUND_END,      // 回合结束【高品质武将技能】
     TURN_START,     // 自身行动开始
     TURN_END,       // 自身行动结束
+    ROUND_ODD,      // 奇数回合
+    ROUND_EVEN,     // 偶数回合
+    ROUND_FIVE,     // 每5回合
+    ROUND_TEN,      // 每10回合
 
     // 受击/伤害相关触发
     ON_HIT,          // 受到攻击时

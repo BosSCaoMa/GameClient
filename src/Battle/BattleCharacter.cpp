@@ -49,48 +49,9 @@ void BattleCharacter::addBuff(EffectType type, int64_t value, int duration, int 
     recalculateAttr();
 }
 
-bool BattleCharacter::BuffIsOffset(EffectType type) const
-{
-    int resistValue = 0;
-    switch (type) {
-        case EffectType::STUN:
-            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Stun);
-            break;
-        case EffectType::FREEZE:
-            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Freeze);
-            break;
-        case EffectType::SILENCE:
-            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Silence);
-            break;
-        case EffectType::TAUNT:
-            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Taunt);
-            break;
-        case EffectType::INJURY:
-            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Injury);
-            break;
-        case EffectType::POISON:
-            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Poison);
-            break;
-        case EffectType::BURN:
-            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Burn);
-            break;
-        case EffectType::BLEED:
-            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Bleed);
-            break;
-        case EffectType::CURSE:
-            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Curse);
-            break;
-        default:
-            return false;
-    }
-    // resistValue是百分比，随机生成0-99
-    int roll = rand();
-    return roll < resistValue;
-}
-
 void BattleCharacter::tickBuffs()
 {
-    // 处理持续
+    // 处理持续 dot伤害类依据攻击者的攻击力
     for (Buff& b : buffs) {
         switch (b.type) {
             case EffectType::BURN:
@@ -153,21 +114,60 @@ void BattleCharacter::recalculateAttr()
                 currentAttr.speed = baseAttr.speed * (100 + static_cast<int>(buff.value)) / 100;
                 break;
             case EffectType::BUFF_CRIT_RATE:
-                currentAttr.critRate += static_cast<int>(buff.value);
+                currentAttr.critRate += static_cast<int16_t>(buff.value);
                 break;
             case EffectType::BUFF_CRIT_RESIST:
-                currentAttr.critResist += static_cast<int>(buff.value);
+                currentAttr.critResist += static_cast<int16_t>(buff.value);
                 break;
             case EffectType::BUFF_HIT_RATE:
-                currentAttr.hitRate += static_cast<int>(buff.value);
+                currentAttr.hitRate += static_cast<int16_t>(buff.value);
                 break;
             case EffectType::BUFF_DODGE_RATE:
-                currentAttr.dodgeRate += static_cast<int>(buff.value);
+                currentAttr.dodgeRate += static_cast<int16_t>(buff.value);
                 break;
             default:
                 break;
         }
     }
+}
+
+bool BattleCharacter::BuffIsOffset(EffectType type) const
+{
+    int resistValue = 0;
+    switch (type) {
+        case EffectType::STUN:
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Stun);
+            break;
+        case EffectType::FREEZE:
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Freeze);
+            break;
+        case EffectType::SILENCE:
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Silence);
+            break;
+        case EffectType::TAUNT:
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Taunt);
+            break;
+        case EffectType::INJURY:
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Injury);
+            break;
+        case EffectType::POISON:
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Poison);
+            break;
+        case EffectType::BURN:
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Burn);
+            break;
+        case EffectType::BLEED:
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Bleed);
+            break;
+        case EffectType::CURSE:
+            resistValue = currentAttr.getResistance(BattleAttr::Resistance::Curse);
+            break;
+        default:
+            return false;
+    }
+    // resistValue是百分比，随机生成0-99
+    int roll = rand();
+    return roll < resistValue;
 }
 
 // ==================== 状态检查 ====================
@@ -288,13 +288,16 @@ Skill* BattleCharacter::getNormalAttack() {
     return getSkill(SkillTrigger::NORMAL_ATTACK);
 }
 
-Skill* BattleCharacter::getRageSkill() {
-    // todo: 合击技能
-    Skill* skill = getSkill(SkillTrigger::RAGE_SKILL);
-    if (skill && currentAttr.rage >= 4) {
-        return skill;
+Skill* BattleCharacter::GetAction() {
+    // todo: 合击技能等
+    if (currentAttr.rage >= 4) {
+        Skill* skill = getSkill(SkillTrigger::RAGE_SKILL);
+        if (skill) {
+            return skill;
+        }
+    } else {
+        return getNormalAttack();
     }
-    return nullptr;
 }
 
 bool BattleCharacter::hasBuffOfType(EffectType type) const

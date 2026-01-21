@@ -10,6 +10,7 @@
 class Player;
 
 class BattleManager {
+    // todo 统计造成的伤害
 public:
     // ==================== 战斗结果枚举 ====================
     enum class Result {
@@ -44,7 +45,8 @@ public:
     int getRound() const;
     bool isOver() const;
     
-    // 获取队伍信息（用于UI展示）
+    // 获取队伍信息
+    BattleCharacter* getBatCharById(int battleId);
     const std::vector<BattleCharacter>& getUserTeam() const;
     const std::vector<BattleCharacter>& getEnemyTeam() const;
 
@@ -53,8 +55,6 @@ private:
     void initBattle();
     void buildUnitMap();
     void createBattleCharacters();
-    void buildTriggerBuckets();
-    void registerCharacterTriggers(BattleCharacter& ch);
     
     // ==================== 回合流程 ====================
     void onRoundStart();
@@ -90,7 +90,7 @@ private:
     // ==================== 技能触发 ====================
     void triggerSkills(SkillTrigger trigger);
     void triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter);
-    void dispatchTrigger(SkillTrigger trigger, BattleCharacter* filter, bool allowDead);
+    void triggerOnRoundX(int round);
     
     // ==================== 状态检查 ====================
     Result checkBattleResult();
@@ -117,8 +117,6 @@ private:
     std::unordered_map<int, BattleCharacter*> unitMap; // battleId -> BattleCharacter*
     // 行动顺序
     std::vector<BattleCharacter*> actionOrder_;
-    std::array<std::vector<BattleCharacter*>, static_cast<size_t>(SkillTrigger::None) + 1> triggerBuckets_;
-    std::vector<BattleCharacter*> triggerDispatchBuffer_;
     
     // 战斗状态
     int round_;

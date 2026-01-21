@@ -37,9 +37,7 @@ public:
     
     // ==================== 构造函数 ====================
     Character();
-    Character(int id_, const std::string& name_, QualityType quality_, Position position_)
-        : id(id_), name(name_), quality(quality_), position(position_),
-          level(1), star(1), exp(0), breakthrough(0) {};
+    Character(int id_, const std::string& name_, QualityType quality_, Position position_);
     
     // ==================== 技能管理 ====================
     void setSkill(const Skill& skill);

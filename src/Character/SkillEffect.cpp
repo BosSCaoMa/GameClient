@@ -76,7 +76,7 @@ SkillEffect SkillEffect::ShieldFixed(TargetType t, int64_t value, int dur, int c
 
 // ==================== 6、怒气类实现 ====================
 SkillEffect SkillEffect::RageChange(TargetType t, int64_t amount, int ch) {
-    return {t, EffectType::RAGE_ADD, ValueType::FIXED, amount, 0, ch};
+    return {t, EffectType::RAGE_CHANGE, ValueType::FIXED, amount, 0, ch};
 }
 
 // ==================7、控制与反控制类实现 ======================

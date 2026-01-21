@@ -19,15 +19,14 @@ bool isExclusiveTrigger(SkillTrigger trigger) {
 
 // ==================== 构造函数 ====================
 Character::Character() 
-    : id(0), level(1), star(1), quality(1)
+    : id(0), level(1), star(1), quality(QualityType::WHITE)
     , exp(0), expMax(100), breakthrough(0) {}
 
-Character::Character(int id_, const std::string& name_, int level_, int star_)
-    : id(id_), name(name_), level(level_), star(star_), quality(1)
-    , exp(0), expMax(100), breakthrough(0)
+Character::Character(int id_, const std::string& name_, QualityType quality_, Position position_)
+    : id(id_), name(name_), quality(quality_), position(position_), level(1), star(1), exp(0), breakthrough(0)
 {
     initExpMax();
-}
+};
 
 // ==================== 技能管理 ====================
 void Character::setSkill(const Skill& skill)

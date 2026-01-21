@@ -205,7 +205,7 @@ void ItemConfig::initConsumables() {
     {
         ItemTemplate tmpl(10101, "怒气精华", IT::CONSUMABLE, CT::RAGE_POTION, 2, 999);
         tmpl.description = "立即获得2点怒气";
-        tmpl.effects.push_back({ET::RAGE_ADD, 2});
+        tmpl.effects.push_back({ET::RAGE_CHANGE, 2});
         regItem(tmpl);
     }
     

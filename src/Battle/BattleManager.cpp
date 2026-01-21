@@ -36,8 +36,6 @@ void BattleManager::initBattle()
     
     createBattleCharacters();
     buildUnitMap();
-    buildTriggerBuckets();
-    log("战斗开始");
 }
 
 void BattleManager::createBattleCharacters()
@@ -46,6 +44,7 @@ void BattleManager::createBattleCharacters()
     for (int i = 0; i < static_cast<int>(userPlayer_->battleTeam.size()); ++i) {
         int charId = userPlayer_->battleTeam[i];
         if (charId == 0) {
+            idx++;
             continue;
         }
         Character* ch = userPlayer_->getCharacter(charId);
@@ -57,6 +56,7 @@ void BattleManager::createBattleCharacters()
     for (int i = 0; i < static_cast<int>(enemyPlayer_->battleTeam.size()); ++i) {
         int charId = enemyPlayer_->battleTeam[i];
         if (charId == 0) {
+            idx++;
             continue;
         }
         Character* ch = enemyPlayer_->getCharacter(charId);
@@ -77,41 +77,25 @@ void BattleManager::buildUnitMap()
     }
 }
 
-void BattleManager::buildTriggerBuckets()
+BattleCharacter* BattleManager::getBatCharById(int battleId)
 {
-    for (auto& bucket : triggerBuckets_) {
-        bucket.clear();
+    auto it = unitMap.find(battleId);
+    if (it != unitMap.end()) {
+        return it->second;
     }
-
-    for (auto& ch : userTeam_) {
-        registerCharacterTriggers(ch);
-    }
-    for (auto& ch : enemyTeam_) {
-        registerCharacterTriggers(ch);
-    }
-}
-
-void BattleManager::registerCharacterTriggers(BattleCharacter& ch)
-{
-    for (const auto& entry : ch.skills) {
-        const auto index = static_cast<size_t>(entry.first);
-        if (index >= triggerBuckets_.size()) {
-            continue;
-        }
-        if (entry.second.empty()) {
-            continue;
-        }
-        triggerBuckets_[index].push_back(&ch);
-    }
+    return nullptr;
 }
 
 // ==================== 公共接口.runBattle开始战斗 ====================
 BattleManager::Result BattleManager::runBattle()
 {
+    log("战斗开始");
     // 触发开局技能
+    calculateActionOrder();
     triggerSkills(SkillTrigger::BATTLE_START);
 
     while (result_ == Result::ONGOING) {
+        calculateActionOrder();
         executeRound();
     }
     
@@ -130,7 +114,7 @@ BattleManager::Result BattleManager::runBattle()
 BattleManager::Result BattleManager::executeRound()
 {
     round_++;
-    log("----- 回合 " + to_string(round_) + " 开始 -----");
+    log("====== 回合 " + to_string(round_) + " 开始 ======");
     // 1. 回合开始阶段
     onRoundStart();
 
@@ -177,24 +161,13 @@ void BattleManager::onRoundStart()
     for (auto& ch : enemyTeam_) {
         ch.hasActed = false;
     }
-    
+    triggerSkills(SkillTrigger::ROUND_X); // todo 第X回合技能触发
     // 触发回合开始技能
     triggerSkills(SkillTrigger::ROUND_START);
 }
 
-void BattleManager::onRoundEnd() {
-    // 处理Buff（包括持续伤害）
-    for (auto& ch : userTeam_) {
-        if (ch.isAlive) {
-            ch.tickBuffs();
-        }
-    }
-    for (auto& ch : enemyTeam_) {
-        if (ch.isAlive) {
-            ch.tickBuffs();
-        }
-    }
-    
+void BattleManager::onRoundEnd()
+{
     // 触发回合结束技能
     triggerSkills(SkillTrigger::ROUND_END);
     
@@ -205,32 +178,31 @@ void BattleManager::onRoundEnd() {
 void BattleManager::calculateActionOrder()
 {
     actionOrder_.clear();
-    
-    for (auto& ch : userTeam_) {
-        if (ch.isAlive) {
-            actionOrder_.push_back(&ch);
-        }
-    }
-    for (auto& ch : enemyTeam_) {
-        if (ch.isAlive) {
-            actionOrder_.push_back(&ch);
-        }
-    }
-    
-    // 按速度降序排序
-    sort(actionOrder_.begin(), actionOrder_.end(),
-        [](BattleCharacter* a, BattleCharacter* b) {
-            if (a->currentAttr.speed != b->currentAttr.speed) {
-                return a->currentAttr.speed > b->currentAttr.speed;
+    for (int i = 1; i <= 6; ++i) {
+        BattleCharacter* userChar = getBatCharById(i);
+        BattleCharacter* enemyChar = getBatCharById(-i);
+        if (userChar && enemyChar == nullptr) {
+            actionOrder_.push_back(userChar);
+        } else if (userChar == nullptr && enemyChar) {
+            actionOrder_.push_back(enemyChar);
+        } else if (userChar && enemyChar) {
+            if (userChar->currentAttr.speed >= enemyChar->currentAttr.speed) {
+                actionOrder_.push_back(userChar);
+                actionOrder_.push_back(enemyChar);
+            } else {
+                actionOrder_.push_back(enemyChar);
+                actionOrder_.push_back(userChar);
             }
-            // 速度相同，ID大的先动
-            return a->battleId > b->battleId;
-        });
+        }
+    }
 }
 
 // ==================== 行动执行（最核心战斗逻辑） ====================
 void BattleManager::executeAction(BattleCharacter* actor)
 {
+    if (!actor || !actor->isAlive) {
+        return;
+    }
     actor->hasActed = true;
     
     // 被控制无法行动
@@ -240,31 +212,30 @@ void BattleManager::executeAction(BattleCharacter* actor)
     }
     
     // 选择技能：优先怒气技能
-    Skill* skill = actor->getRageSkill();
-    if (skill) {
-        actor->currentAttr.rage -= 4;
-        log(actor->name + " 释放 [" + skill->name + "]！");
-    } else {  // 怒气不足或者无怒气技能
-        skill = actor->getNormalAttack();
-        if (!skill) {
-            LOG_ERROR("错误：%s 无法进行普通攻击！", actor->name.c_str());
-            return;
-        }
-        log(actor->name + " 进行普通攻击");
+    Skill* skill = actor->GetAction();
+    if (!skill) {
+        log(actor->name + " 无法行动，跳过本次行动。");
+        return;
     }
-    
     executeSkill(actor, skill);
     
     // 普攻回怒
     if (skill->trigger == SkillTrigger::NORMAL_ATTACK) {
         actor->addRage(1);
     }
-
+    // 处理buff效果提前到行动结束
+    if (actor->isAlive) {
+        actor->tickBuffs();
+    }
     checkDeaths();
 }
 
 void BattleManager::executeSkill(BattleCharacter* caster, Skill* skill)
 {
+    if (!skill || !caster ) {
+        LOG_ERROR("Invalid caster or skill in executeSkill");
+        return;
+    }
     if (skill->HasOnTrigger()) {
         skill->onTrigger(caster, this);
     }
@@ -299,6 +270,10 @@ void BattleManager::executeEffect(BattleCharacter* caster, const SkillEffect& ef
 void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target,
     const SkillEffect& effect, int skillId)
 {
+    if (!caster || !target) {
+        LOG_ERROR("Invalid caster or target in applyEffect");
+        return;
+    }
     switch (effect.effect) {
         // ===== 即时伤害 =====
         case EffectType::DAMAGE: 
@@ -339,13 +314,11 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         }
         
         // ===== 怒气操作 =====
-        case EffectType::RAGE_ADD:
-        case EffectType::RAGE_REDUCE: {
+        case EffectType::RAGE_CHANGE: {
             int amount = static_cast<int>(effect.value);
-            bool isAdd = (effect.effect == EffectType::RAGE_ADD);
-            string action = isAdd ? "获得" : "减少";
-            target->addRage(isAdd ? amount : -amount);
-            log("  - " + target->name + " " + action + " " + to_string(amount) + " 点怒气");
+            string action = amount > 0 ? "获得" : "减少";
+            target->addRage(amount);
+            log("  - " + target->name + " " + action + " " + to_string(abs(amount)) + " 点怒气");
             break;
         }
         
@@ -424,22 +397,12 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
             break;
         }
         case EffectType::TRANSFER_DEBUFF: {
-            int limit = static_cast<int>(effect.value);
-            int moved = caster->transferDebuffsTo(target, limit);
-            string msg = moved > 0 ?
-                ("  - " + caster->name + " 将 " + to_string(moved) + " 个负面状态转移给 " + target->name) :
-                ("  - " + caster->name + " 没有可转移的负面状态");
-            log(msg);
+            // todo Debuff转移逻辑
             break;
         }
 
         case EffectType::REVIVE: {
-            // 复活需要特殊处理，目标选择时需要包含死亡单位
-            if (!target->isAlive) {
-                target->isAlive = true;
-                int64_t reviveHp = target->currentAttr.maxHp * effect.value / 100;
-                target->currentAttr.hp = reviveHp;
-            }
+            // 复活需要特殊处理，目标选择时需要包含死亡单位 todo
             break;
         }
         
@@ -474,6 +437,7 @@ int64_t BattleManager::calculateValue(BattleCharacter* caster, const SkillEffect
             return lostHp * baseValue / 100;
         }
         case ValueType::PERCENT_TARGET_MAXHP:
+            if (!target) return baseValue;
             return target->currentAttr.maxHp * baseValue / 100;
         default:
             return baseValue;
@@ -528,6 +492,10 @@ int64_t BattleManager::calculateHeal(BattleCharacter* caster, BattleCharacter* t
 // ==================== 目标选择 ====================
 vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, TargetType type)
 {
+    if (!caster) {
+        LOG_ERROR("Invalid caster in getTargets");
+        return {};
+    }
     vector<BattleCharacter*> targets;
     vector<BattleCharacter>& allyTeam = caster->battleId > 0 ? userTeam_ : enemyTeam_;
     vector<BattleCharacter>& enemyTeamRef = caster->battleId > 0 ? enemyTeam_ : userTeam_;
@@ -564,7 +532,15 @@ vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, Targ
             return targets;
         
         case TargetType::ENEMY_COL: 
-            // todo
+            {
+                int col = (abs(caster->battleId) - 1) % 3; // 0,1,2
+                for (auto& ch : enemyTeamRef) {
+                    if (ch.isAlive && (abs(ch.battleId) - 1) % 3 == col) {
+                        targets.push_back(&ch);
+                    }
+                }
+                return targets;
+            }
 
         // ===== 前后排 =====
         case TargetType::ALLY_FRONT_ROW:
@@ -731,74 +707,34 @@ vector<BattleCharacter*> BattleManager::selectByAttr(vector<BattleCharacter>& te
 // ==================== 技能触发 ====================
 void BattleManager::triggerSkills(SkillTrigger trigger)
 {
-    dispatchTrigger(trigger, nullptr, trigger == SkillTrigger::ON_DEATH);
+    for (BattleCharacter* ch : actionOrder_) {
+        triggerSkills(trigger, ch);
+    }
 }
 
 void BattleManager::triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter)
 {
-    if (!specificCharacter) {
+    if (specificCharacter == nullptr) {
         return;
     }
-    const bool allowDead = (trigger == SkillTrigger::ON_DEATH);
-    dispatchTrigger(trigger, specificCharacter, allowDead);
+    if (!specificCharacter->isAlive && trigger != SkillTrigger::ON_DEATH) {
+        return;
+    }
+    const auto* skillList = specificCharacter->getSkills(trigger);
+    for (const Skill& skill : *skillList) {
+        if (skill.id == 0) {
+            continue;
+        }
+        log(specificCharacter->name + " 触发技能: " + skill.name);
+        for (const SkillEffect& effect : skill.effects) {
+            executeEffect(specificCharacter, effect, skill.id);
+        }
+    }
 }
 
-void BattleManager::dispatchTrigger(SkillTrigger trigger, BattleCharacter* filter, bool allowDead)
+void BattleManager::triggerOnRoundX(int round)
 {
-    const auto index = static_cast<size_t>(trigger);
-    if (index >= triggerBuckets_.size()) {
-        return;
-    }
-
-    triggerDispatchBuffer_.clear();
-    auto& registry = triggerBuckets_[index];
-    triggerDispatchBuffer_.reserve(registry.size());
-
-    for (BattleCharacter* ch : registry) {
-        if (!ch) {
-            continue;
-        }
-        if (filter && ch != filter) {
-            continue;
-        }
-        if (allowDead) {
-            if (!filter && ch->isAlive) {
-                continue;
-            }
-        } else if (!ch->isAlive) {
-            continue;
-        }
-        triggerDispatchBuffer_.push_back(ch);
-    }
-
-    if (triggerDispatchBuffer_.empty()) {
-        return;
-    }
-
-    sort(triggerDispatchBuffer_.begin(), triggerDispatchBuffer_.end(),
-        [](BattleCharacter* a, BattleCharacter* b) {
-            return a->currentAttr.speed > b->currentAttr.speed;
-        });
-
-    for (BattleCharacter* ch : triggerDispatchBuffer_) {
-        const auto* skillList = ch->getSkills(trigger);
-        if (!skillList) {
-            continue;
-        }
-        for (const Skill& skill : *skillList) {
-            if (skill.id == 0) {
-                continue;
-            }
-            if (trigger == SkillTrigger::ON_DEATH) {
-                LOG_INFO("%s 触发阵亡技能 [%s]", ch->name.c_str(), skill.name.c_str());
-            } else if (trigger != SkillTrigger::ON_HIT) {
-                log(ch->name + "触发技能: " + skill.name);
-            }
-            for (const SkillEffect& effect : skill.effects) {
-                executeEffect(ch, effect, skill.id);
-            }
-        }
-    }
+    // 处理奇数回合和偶数回合的触发，以及倍数相关
 }
 
 // ==================== 状态检查 ====================
@@ -842,35 +778,41 @@ void BattleManager::checkDeaths()
     }
 }
 
-bool BattleManager::isTeamAlive(const vector<BattleCharacter>& team) const
+int64_t BattleManager::calculateTrueDamage(BattleCharacter* caster, BattleCharacter* target,
+    const SkillEffect& effect)
 {
-    for (const auto& ch : team) {
-        if (ch.isAlive) {
-            return true;
-        }
+    // 1. 闪避判定
+    int dodgeRate = target->currentAttr.dodgeRate - caster->currentAttr.hitRate;
+    dodgeRate = clamp(dodgeRate, 0, 50);
+    if (rollChance(dodgeRate)) {
+        return 0;
     }
-    return false;
+
+    // 2. 基础伤害
+    int64_t baseDamage = calculateValue(caster, effect, target);
+    int critRate = caster->currentAttr.critRate - target->currentAttr.critResist;
+    critRate = clamp(critRate, 0, 100);
+    if (rollChance(critRate)) {
+        baseDamage = baseDamage * caster->currentAttr.critDamage / 100;
+        LOG_INFO("  - 真伤暴击！");
+    }
+
+    // 5. 伤害加成/减免
+    baseDamage = baseDamage * (100 + caster->currentAttr.damageBonus) / 100;
+    baseDamage = baseDamage * (100 - target->currentAttr.damageReduction) / 100;
+
+    return max(static_cast<int64_t>(1), baseDamage);
 }
 
-int BattleManager::countAlive(const vector<BattleCharacter>& team) const
-{
-    int count = 0;
-    for (const auto& ch : team) {
-        if (ch.isAlive) {
-            count++;
-        }
-    }
-    return count;
-}
-
-// ==================== 工具函数 ====================
+// =================================================================
+// ==================== 其他辅助函数,基本不会查看 ====================
+// =================================================================
 
 string BattleManager::getEffectName(EffectType type) const {
     switch (type) {
         case EffectType::DAMAGE:        return "伤害";
         case EffectType::HEAL:          return "治疗";
-        case EffectType::RAGE_ADD:      return "怒气增加";
-        case EffectType::RAGE_REDUCE:   return "怒气减少";
+        case EffectType::RAGE_CHANGE:      return "怒气增加";
         case EffectType::BUFF_ATK:      return "攻击力";
         case EffectType::BUFF_DEF:      return "防御力";
         case EffectType::BUFF_SPEED:    return "速度";
@@ -913,32 +855,6 @@ void BattleManager::setLogCallback(LogCallback callback)
     logCallback_ = callback;
 }
 
-int64_t BattleManager::calculateTrueDamage(BattleCharacter* caster, BattleCharacter* target,
-    const SkillEffect& effect)
-{
-    // 1. 闪避判定
-    int dodgeRate = target->currentAttr.dodgeRate - caster->currentAttr.hitRate;
-    dodgeRate = clamp(dodgeRate, 0, 50);
-    if (rollChance(dodgeRate)) {
-        return 0;
-    }
-
-    // 2. 基础伤害
-    int64_t baseDamage = calculateValue(caster, effect, target);
-    int critRate = caster->currentAttr.critRate - target->currentAttr.critResist;
-    critRate = clamp(critRate, 0, 100);
-    if (rollChance(critRate)) {
-        baseDamage = baseDamage * caster->currentAttr.critDamage / 100;
-        LOG_INFO("  - 真伤暴击！");
-    }
-
-    // 5. 伤害加成/减免
-    baseDamage = baseDamage * (100 + caster->currentAttr.damageBonus) / 100;
-    baseDamage = baseDamage * (100 - target->currentAttr.damageReduction) / 100;
-
-    return max(static_cast<int64_t>(1), baseDamage);
-}
-
 BattleManager::Result BattleManager::getResult() const {
     return result_;
 }
@@ -963,4 +879,25 @@ void BattleManager::log(const string& message) {
     if (logCallback_) {
         logCallback_(message);
     }
+}
+
+bool BattleManager::isTeamAlive(const vector<BattleCharacter>& team) const
+{
+    for (const auto& ch : team) {
+        if (ch.isAlive) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int BattleManager::countAlive(const vector<BattleCharacter>& team) const
+{
+    int count = 0;
+    for (const auto& ch : team) {
+        if (ch.isAlive) {
+            count++;
+        }
+    }
+    return count;
 }
