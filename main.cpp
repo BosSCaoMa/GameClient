@@ -1,88 +1,179 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <limits>
 
 #include "Player.h"
-#include "SkillConfig.h"
 #include "CharacterConfig.h"
 #include "BattleManager.h"
+
+using namespace std;
+
 namespace {
 
-Character createHero(int id,
-					 const std::string& name,
-					 int level,
-					 const BattleAttr& attr,
-					 int normalSkillId,
-					 int rageSkillId,
-					 std::initializer_list<int> extraSkills = {})
+void ClearBadInput()
 {
-	Character hero(id, name, level, 1);
-	hero.originAttr = attr;
-	hero.baseAttr = attr;
-	hero.setSkill(GET_SKILL(normalSkillId));
-	hero.setSkill(GET_SKILL(rageSkillId));
-	for (int skillId : extraSkills) {
-		hero.setSkill(GET_SKILL(skillId));
-	}
-	hero.recalculateAttr();
-	return hero;
+	cin.clear();
+	cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
 
-void registerTeam(Player& player, const std::vector<Character>& roster)
+void PrintTeam(const Player& player, const string& label)
 {
-	for (const auto& hero : roster) {
-		if (!player.addCharacter(hero)) {
+	cout << label << "阵容(" << player.battleTeam.size() << "/6): ";
+	if (player.battleTeam.empty()) {
+		cout << "暂无武将";
+	} else {
+		for (int id : player.battleTeam) {
+			const auto* tmpl = CharacterConfig::instance().get(id);
+			if (tmpl) {
+				cout << tmpl->name << "(" << tmpl->id << ") ";
+			} else {
+				cout << id << ' ';
+			}
+		}
+	}
+	cout << endl;
+}
+
+void ShowHeroSamples(int limit = 10)
+{
+	auto ids = CharacterConfig::instance().getAllIds();
+	if (ids.empty()) {
+		cout << "暂未加载武将配置。" << endl;
+		return;
+	}
+	sort(ids.begin(), ids.end());
+	limit = min(limit, static_cast<int>(ids.size()));
+	cout << "示例武将：" << endl;
+	for (int i = 0; i < limit; ++i) {
+		const auto* tmpl = CharacterConfig::instance().get(ids[i]);
+		if (!tmpl) {
 			continue;
 		}
-		player.addToBattleTeam(hero.id);
-		if (!player.mainCharacter) {
-			player.mainCharacter = player.getCharacter(hero.id);
+		cout << "  " << tmpl->id << " - " << tmpl->name << endl;
+	}
+	cout << endl;
+}
+
+void ConfigureTeam(Player& player, const string& label)
+{
+	cout << "正在配置" << label << "阵容，输入-1查看示例武将，输入0结束。" << endl;
+	while (true) {
+		PrintTeam(player, label);
+		if (player.isBattleTeamFull()) {
+			cout << label << "阵容已满。" << endl;
+			break;
 		}
+		cout << "请输入要添加的武将ID: ";
+		int charId = 0;
+		if (!(cin >> charId)) {
+			ClearBadInput();
+			cout << "输入无效，请输入数字。" << endl;
+			continue;
+		}
+		if (charId == 0) {
+			break;
+		}
+		if (charId == -1) {
+			ShowHeroSamples();
+			continue;
+		}
+
+		const auto* tmpl = CharacterConfig::instance().get(charId);
+		if (!tmpl) {
+			cout << "未找到该武将，请重新输入。" << endl;
+			continue;
+		}
+		if (!player.hasCharacter(charId)) {
+			player.addCharacter(CharacterConfig::instance().create(charId));
+		}
+		if (!player.addToBattleTeam(charId)) {
+			cout << "添加失败：可能已在阵容或阵容已满。" << endl;
+			continue;
+		}
+		cout << "已添加 " << tmpl->name << "(" << tmpl->id << ")" << endl;
 	}
 }
 
-std::string toString(BattleManager::Result result)
+bool EnsureTeamReady(const Player& player, const string& label)
+{
+	if (player.battleTeam.empty()) {
+		cout << label << "阵容为空，请先添加武将。" << endl;
+		return false;
+	}
+	return true;
+}
+
+string ResultToText(BattleManager::Result result)
 {
 	switch (result) {
-		case BattleManager::Result::WIN: return "胜利";
-		case BattleManager::Result::LOSE: return "失败";
-		case BattleManager::Result::DRAW: return "平局";
-		default: return "进行中";
+	case BattleManager::Result::WIN:
+		return "我方胜利";
+	case BattleManager::Result::LOSE:
+		return "我方失败";
+	case BattleManager::Result::DRAW:
+		return "双方平局";
+	default:
+		return "战斗进行中";
 	}
+}
+
+void StartBattle(Player& user, Player& enemy)
+{
+	if (!EnsureTeamReady(user, "玩家") || !EnsureTeamReady(enemy, "敌方")) {
+		return;
+	}
+	PrintTeam(user, "玩家");
+	PrintTeam(enemy, "敌方");
+	BattleManager manager(&user, &enemy);
+	auto result = manager.runBattle();
+	cout << "战斗结束：" << ResultToText(result) << endl;
 }
 
 } // namespace
 
+void ShowHome()
+{
+	cout<<"=== 游戏主界面 ==="<<endl;
+	cout<<"1. 添加玩家队伍"<<endl;
+	cout<<"2. 添加敌方队伍"<<endl;
+	cout<<"3. 开始战斗"<<endl;
+	cout<<"0. 退出"<<endl;
+	cout<<"请选择操作: ";
+}
+
 int main()
 {
-	auto logFn = [](const std::string& msg) {
-		std::cout << msg << std::endl;
-	};
-
-	Player user(1, "青龙军");
-	Player enemy(2, "白虎军");
-
-	std::vector<Character> userRoster = {
-		createHero(1001, "关羽", 50, BattleAttr(6200, 420, 190, 105), 1, 101, {601}),
-		createHero(1002, "张飞", 48, BattleAttr(6800, 360, 230, 95), 1, 105, {602}),
-		createHero(1003, "赵云", 49, BattleAttr(5800, 410, 180, 115), 1, 103, {603})
-	};
-
-	std::vector<Character> enemyRoster = {
-		createHero(2001, "吕布", 52, BattleAttr(6500, 450, 200, 100), 2, 106, {601, 606}),
-		createHero(2002, "董卓", 47, BattleAttr(7000, 340, 260, 90), 3, 401, {602}),
-		createHero(2003, "贾诩", 50, BattleAttr(5400, 380, 170, 110), 4, 502, {604})
-	};
-
-	registerTeam(user, userRoster);
-	registerTeam(enemy, enemyRoster);
-
-	BattleManager battle(&user, &enemy, logFn);
-	BattleManager::Result result = battle.runBattle();
-
-	std::cout << "==============================\n";
-	std::cout << "战斗结束，结果：" << toString(result)
-			  << "，共经历 " << battle.getRound() << " 回合" << std::endl;
-
+	Player user(1, "玩家1");
+	Player enemy(2, "敌人");
+	bool running = true;
+	while (running) {
+		ShowHome();
+		int choice = 0;
+		if (!(cin >> choice)) {
+			ClearBadInput();
+			cout << "输入无效，请重新选择。" << endl;
+			continue;
+		}
+		switch (choice) {
+		case 1:
+			ConfigureTeam(user, "玩家");
+			break;
+		case 2:
+			ConfigureTeam(enemy, "敌方");
+			break;
+		case 3:
+			StartBattle(user, enemy);
+			break;
+		case 0:
+			running = false;
+			break;
+		default:
+			cout << "请输入0-3之间的选项。" << endl;
+			break;
+		}
+	}
+	cout << "感谢体验，再见！" << endl;
 	return 0;
 }
