@@ -1,22 +1,58 @@
 # GameClient
-游戏服务器
+回合制战斗/数值验证客户端，聚焦在“用静态 C++ 配置驱动武将、技能、物品和战斗循环”。README 延续早期写法：先列核心模块完成度，再给出 BattleManager 详细流程，方便快速了解项目脉络。
 
-核心模块
-- 类型 审视  丰富
-- 物品 done  暂不
-- 装备 done  
-- 效果 done  完成
-- 技能 done  
-- 武将 done
-- 玩家 done
-- 战斗 done
+## 核心模块完成度
 
-物品不涉及升级，所以基础部分全部保存在itemconfig中，背包系统保存{id, count}
+- 类型：审视中，逐步丰富
+- 物品：✅（静态配置，背包 `{id, count}` 存储）
+- 装备：✅（基础模版 + 预留强化接口）
+- 效果：✅（`SkillEffect` 工厂已覆盖 DOT/控制/护盾/怒气等）
+- 技能：✅（基础技能 + 各势力红/橙武将专属技能）
+- 武将：✅（蜀/吴/魏/群雄红、橙品质模板可直接 `CREATE_CHAR`）
+- 玩家：✅（`Player`/`BattleCharacter` 组合，支持技能槽/怒气）
+- 战斗：✅（`BattleManager` 完整生命周期 + 日志）
 
+> **物品/装备说明**：物品不涉及升级，静态属性保存在 `ItemConfig`；背包仅记录 `{itemId, count}`，UI 或保存层按需扩展。
 
-# BattleManager 函数调用流程
+## 项目结构速览
 
-## 一、整体流程图
+```
+GameClient/
+├─ src/
+│  ├─ Battle/           # BattleAttr、BattleManager、战斗角色
+│  ├─ Character/        # 角色、技能、Buff 运行时对象
+│  ├─ DataConfig/       # 武将/技能/物品静态表（当前重点）
+│  └─ Item/, Network/…  # 其他系统
+├─ lib/json.hpp         # nlohmann json 单头
+├─ tools/generate_battle_attr_table.py
+├─ CMakeLists.txt
+└─ build*/              # CMake 生成目录
+```
+
+## 构建 & 运行
+
+1. 生成工程：`cmake -S . -B build`
+2. 编译：`cmake --build build --config Debug`
+3. 运行示例：`build/Debug/GameClient.exe`（main.cpp 内置示例阵容）
+
+VS Code 用户可直接使用工作区提供的 `C/C++: g++.exe 生成活动文件` 任务调试单个源文件。
+
+## 数据配置说明
+
+- **武将 (`CharacterConfig`)**：使用 `addHero(id, name, quality, position, {skillIds})` 注册。ID 分段：蜀 1000~1999，吴 2000~2999，魏 3000~3999，群 4000~4999。已补齐红、橙品质 20+ 武将。
+- **技能 (`SkillConfig`)**：先 `reg(Skill(...).addEffect(...))`，再在角色模板引用。技能 ID 与阵营对应（如蜀 2000+、吴 1100+、魏 3000+、群 4000+）。
+- **属性脚本**：`tools/generate_battle_attr_table.py` 基于 `BattleAttr::InitAttr` 和等级成长导出全品质属性表。
+
+```bash
+python tools/generate_battle_attr_table.py --start-level 1 --max-level 150 \
+    --csv out/battle_attr.csv --excel out/battle_attr.xlsx
+```
+
+## BattleManager 函数调用流程
+
+以下章节保留旧 README 的结构，并补充了当前代码的最新细节。
+
+### 一、整体流程图
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -61,9 +97,9 @@
 
 ---
 
-## 二、详细调用顺序
+### 二、详细调用顺序
 
-### 1. 构造阶段
+#### 1. 构造阶段
 
 ```
 BattleManager::BattleManager(Player* user, Player* enemy)
@@ -101,7 +137,7 @@ BattleManager::BattleManager(Player* user, Player* enemy)
 
 ---
 
-### 2. 战斗主循环
+#### 2. 战斗主循环
 
 ```
 BattleManager::runBattle()
@@ -117,7 +153,7 @@ BattleManager::runBattle()
 
 ---
 
-### 3. 单回合执行流程 (核心)
+#### 3. 单回合执行流程 (核心)
 
 ```
 BattleManager::executeRound()
@@ -128,7 +164,7 @@ BattleManager::executeRound()
 ├── 3. onRoundStart() ─────────────────────────────────────┐
 │       │                                                   │
 │       ├── 重置所有角色 hasActed = false                    │
-│       │                                                   │z
+│       │                                                   │
 │       └── triggerSkills(SkillTrigger::ROUND_START)        │
 │               │                                           │
 │               └── 执行回合开始触发的技能                    │
@@ -175,7 +211,7 @@ BattleManager::executeRound()
 
 ---
 
-### 4. 行动执行流程
+#### 4. 行动执行流程
 
 ```
 BattleManager::executeAction(BattleCharacter* actor)
@@ -218,7 +254,7 @@ BattleManager::executeAction(BattleCharacter* actor)
 
 ---
 
-### 5. 技能效果执行流程
+#### 5. 技能效果执行流程
 
 ```
 BattleManager::executeEffect(caster, effect, skillId)
@@ -245,7 +281,7 @@ BattleManager::executeEffect(caster, effect, skillId)
 
 ---
 
-### 6. 效果应用流程
+#### 6. 效果应用流程
 
 ```
 BattleManager::applyEffect(caster, target, effect, skillId)
@@ -311,7 +347,7 @@ BattleManager::applyEffect(caster, target, effect, skillId)
 
 ---
 
-## 三、完整时序图
+### 三、完整时序图
 
 ```
 时间轴 ──────────────────────────────────────────────────────────────────────▶
@@ -343,7 +379,7 @@ trigger      executeAction x N          executeAction x N
 
 ---
 
-## 四、关键函数调用频率
+### 四、关键函数调用频率
 
 | 函数                         | 调用时机    | 频率                  |
 | -------------------------- | ------- | ------------------- |
@@ -363,3 +399,10 @@ trigger      executeAction x N          executeAction x N
 | `checkDeaths()`            | 行动后/回合末 | 高频                  |
 | `onRoundEnd()`             | 回合结束    | N次                  |
 | `checkBattleResult()`      | 多处检查    | 高频                  |
+
+## 开发建议
+
+1. **新增武将**：先在 `SkillConfig` 注册技能（含效果与触发），记录技能 ID；再调用 `addHero` 写入 `CharacterConfig` 对应阵营/品质函数。
+2. **调试战斗**：在 `main.cpp` 构建阵容并运行，BattleManager 日志会标记每回合、技能、DOT 与死亡事件，便于定位数值问题。
+3. **快速验证属性**：用 `generate_battle_attr_table.py` 导出任意品质 × 等级 × 定位的属性，配合 Excel 做平衡分析。
+4. **后续扩展**：README 保留 BattleManager 的旧式流程写法，新增模块时也建议沿用“完成度 + 流程”格式，方便团队同步。

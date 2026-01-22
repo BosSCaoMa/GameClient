@@ -161,7 +161,13 @@ void CharacterConfig::InitShuRedCharacters()
 
 void CharacterConfig::InitShuOrangeCharacters()
 {
-
+    addHero(2006, "黄忠", QualityType::ORANGE, Position::ASSASSIN, {2016, 2017, 2018});
+    addHero(2007, "马超", QualityType::ORANGE, Position::WARRIOR, {2019, 2020, 2021});
+    addHero(2008, "庞统", QualityType::ORANGE, Position::MAGE, {2022, 2023, 2024});
+    addHero(2009, "姜维", QualityType::ORANGE, Position::MAGE, {2025, 2026, 2027});
+    addHero(2010, "魏延", QualityType::ORANGE, Position::WARRIOR, {2028, 2029, 2030});
+    addHero(2011, "张苞", QualityType::ORANGE, Position::TANK, {2031, 2032, 2033});
+    addHero(2012, "关银屏", QualityType::ORANGE, Position::ASSASSIN, {2034, 2035, 2036});
 }
 
 void CharacterConfig::InitShuPurpleCharacters()
@@ -188,7 +194,13 @@ void CharacterConfig::InitWuRedCharacters()
 
 void CharacterConfig::InitWuOrangeCharacters()
 {
-
+    addHero(3004, "甘宁", QualityType::ORANGE, Position::ASSASSIN, {1110, 1111, 1112});
+    addHero(3005, "吕蒙", QualityType::ORANGE, Position::MAGE, {1113, 1114, 1115});
+    addHero(3006, "陆逊", QualityType::ORANGE, Position::MAGE, {1116, 1117, 1118});
+    addHero(3007, "凌统", QualityType::ORANGE, Position::WARRIOR, {1119, 1120, 1121});
+    addHero(3008, "丁奉", QualityType::ORANGE, Position::TANK, {1122, 1123, 1124});
+    addHero(3009, "大乔", QualityType::ORANGE, Position::HEALER, {1125, 1126, 1127});
+    addHero(3010, "孙尚香", QualityType::ORANGE, Position::ASSASSIN, {1128, 1129, 1130});
 }
 
 void CharacterConfig::InitWuPurpleCharacters()
@@ -215,7 +227,13 @@ void CharacterConfig::InitWeiRedCharacters()
 
 void CharacterConfig::InitWeiOrangeCharacters()
 {
-
+    addHero(3104, "张辽", QualityType::ORANGE, Position::ASSASSIN, {3010, 3011, 3012});
+    addHero(3105, "许褚", QualityType::ORANGE, Position::TANK, {3013, 3014, 3015});
+    addHero(3106, "夏侯惇", QualityType::ORANGE, Position::WARRIOR, {3016, 3017, 3018});
+    addHero(3107, "夏侯渊", QualityType::ORANGE, Position::ASSASSIN, {3019, 3020, 3021});
+    addHero(3108, "郭嘉", QualityType::ORANGE, Position::MAGE, {3022, 3023, 3024});
+    addHero(3109, "张郃", QualityType::ORANGE, Position::WARRIOR, {3025, 3026, 3027});
+    addHero(3110, "于禁", QualityType::ORANGE, Position::TANK, {3028, 3029, 3030});
 }
 
 void CharacterConfig::InitWeiPurpleCharacters()
@@ -242,7 +260,13 @@ void CharacterConfig::InitQunRedCharacters()
 
 void CharacterConfig::InitQunOrangeCharacters()
 {
-
+    addHero(4004, "贾诩", QualityType::ORANGE, Position::MAGE, {4016, 4017, 4018});
+    addHero(4005, "华雄", QualityType::ORANGE, Position::WARRIOR, {4019, 4020, 4021});
+    addHero(4006, "董卓", QualityType::ORANGE, Position::TANK, {4022, 4023, 4024});
+    addHero(4007, "貂蝉", QualityType::ORANGE, Position::ASSASSIN, {4025, 4026, 4027});
+    addHero(4008, "公孙瓒", QualityType::ORANGE, Position::WARRIOR, {4028, 4029, 4030});
+    addHero(4009, "颜良", QualityType::ORANGE, Position::WARRIOR, {4031, 4032, 4033});
+    addHero(4010, "文丑", QualityType::ORANGE, Position::WARRIOR, {4034, 4035, 4036});
 }
 
 void CharacterConfig::InitQunPurpleCharacters()
