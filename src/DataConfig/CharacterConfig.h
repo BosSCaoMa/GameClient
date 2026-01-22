@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <initializer_list>
 
 // ==================== 武将模板 ====================
 struct CharacterTemplate {
@@ -56,11 +57,49 @@ private:
     CharacterConfig(const CharacterConfig&) = delete;
     CharacterConfig& operator=(const CharacterConfig&) = delete;
     
-    void initCharacters();
-    
     std::unordered_map<int, CharacterTemplate> templates_;
+
+    void initCharacters();
+    void initBaseCharacters();
+    void InitShuCharacters();
+    void InitWuCharacters();
+    void InitWeiCharacters();
+    void InitQunCharacters();
+    void InitShenCharacters();
+    void addHero(int id, const char* name, QualityType quality, Position pos,
+        std::initializer_list<int> skills);
+    void InitShuRedCharacters();
+    void InitShuOrangeCharacters();
+    void InitShuPurpleCharacters();
+    void InitShuBlueCharacters();
+    void InitShuGreenCharacters();
+    void InitWuRedCharacters();
+    void InitWuOrangeCharacters();
+    void InitWuPurpleCharacters();
+    void InitWuBlueCharacters();
+    void InitWuGreenCharacters();
+    void InitWeiRedCharacters();
+    void InitWeiOrangeCharacters();
+    void InitWeiPurpleCharacters();
+    void InitWeiBlueCharacters();
+    void InitWeiGreenCharacters();
+    void InitQunRedCharacters();
+    void InitQunOrangeCharacters();
+    void InitQunPurpleCharacters();
+    void InitQunBlueCharacters();
+    void InitQunGreenCharacters();
 };
 
 // ==================== 便捷访问宏 ====================
 #define GET_CHAR_TMPL(id) CharacterConfig::instance().get(id)
 #define CREATE_CHAR(id, lv, star) CharacterConfig::instance().create(id, lv, star)
+
+// 约定定义
+/*
+0 - 999 基础：小兵等等
+1000 - 1999 蜀国
+2000 - 2999 吴国
+3000 - 3999 魏国
+4000 - 4999 群雄
+5000 - 5999 神将
+*/

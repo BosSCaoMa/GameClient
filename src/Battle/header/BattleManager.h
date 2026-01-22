@@ -90,8 +90,8 @@ private:
     // ==================== 技能触发 ====================
     void triggerSkills(SkillTrigger trigger);
     void triggerSkills(SkillTrigger trigger, BattleCharacter* specificCharacter);
-    void triggerOnRoundX(int round);
-    
+    void triggerOnRoundX();
+
     // ==================== 状态检查 ====================
     Result checkBattleResult();
     void checkDeaths();

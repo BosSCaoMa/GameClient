@@ -161,7 +161,7 @@ void BattleManager::onRoundStart()
     for (auto& ch : enemyTeam_) {
         ch.hasActed = false;
     }
-    triggerSkills(SkillTrigger::ROUND_X); // todo 第X回合技能触发
+    triggerOnRoundX();
     // 触发回合开始技能
     triggerSkills(SkillTrigger::ROUND_START);
 }
@@ -732,9 +732,10 @@ void BattleManager::triggerSkills(SkillTrigger trigger, BattleCharacter* specifi
     }
 }
 
-void BattleManager::triggerOnRoundX(int round)
+void BattleManager::triggerOnRoundX()
 {
-    // 处理奇数回合和偶数回合的触发，以及倍数相关
+    // todo 处理奇数回合和偶数回合的触发，以及倍数相关
+
 }
 
 // ==================== 状态检查 ====================
