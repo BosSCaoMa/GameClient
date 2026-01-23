@@ -3,6 +3,7 @@
 #include <string>
 #include <algorithm>
 #include <limits>
+#include <sstream>
 
 #include "Player.h"
 #include "CharacterConfig.h"
@@ -131,6 +132,59 @@ void StartBattle(Player& user, Player& enemy)
 	cout << "战斗结束：" << ResultToText(result) << endl;
 }
 
+bool FillQuickTeam(Player& player, const string& label)
+{
+	cout << "请输入" << label << "武将ID（空格分隔，最多6名）：";
+	string line;
+	getline(cin, line);
+	if (line.empty()) {
+		cout << "未输入任何武将，快速模式取消。" << endl;
+		return false;
+	}
+	istringstream iss(line);
+	int charId = 0;
+	while (iss >> charId && player.battleTeam.size() < 6) {
+		const auto* tmpl = CharacterConfig::instance().get(charId);
+		if (!tmpl) {
+			cout << "  -> ID=" << charId << " 不存在，已跳过。" << endl;
+			continue;
+		}
+		if (!player.hasCharacter(charId)) {
+			player.addCharacter(CharacterConfig::instance().create(charId));
+		}
+		if (!player.addToBattleTeam(charId)) {
+			cout << "  -> " << tmpl->name << " 已添加或阵容已满。" << endl;
+			continue;
+		}
+		cout << "  -> 已添加 " << tmpl->name << endl;
+	}
+	if (player.battleTeam.empty()) {
+		cout << label << "未配置有效武将，快速模式取消。" << endl;
+		return false;
+	}
+	return true;
+}
+
+void RunQuickMode(Player& baseUser, Player& baseEnemy)
+{
+	cin.ignore(numeric_limits<streamsize>::max(), '\n');
+	Player quickUser(baseUser.id, baseUser.name);
+	Player quickEnemy(baseEnemy.id, baseEnemy.name);
+	ShowHeroSamples();
+	cout << "快速模式：依次输入双方阵容并立即开始战斗。" << endl;
+	if (!FillQuickTeam(quickUser, "玩家")) {
+		return;
+	}
+	if (!FillQuickTeam(quickEnemy, "敌方")) {
+		return;
+	}
+	PrintTeam(quickUser, "玩家(快速)");
+	PrintTeam(quickEnemy, "敌方(快速)");
+	BattleManager manager(&quickUser, &quickEnemy);
+	auto result = manager.runBattle();
+	cout << "快速模式战斗结束：" << ResultToText(result) << endl;
+}
+
 } // namespace
 
 void ShowHome()
@@ -139,6 +193,7 @@ void ShowHome()
 	cout<<"1. 添加玩家队伍"<<endl;
 	cout<<"2. 添加敌方队伍"<<endl;
 	cout<<"3. 开始战斗"<<endl;
+	cout<<"4. 快速测试模式"<<endl;
 	cout<<"0. 退出"<<endl;
 	cout<<"请选择操作: ";
 }
@@ -166,11 +221,14 @@ int main()
 		case 3:
 			StartBattle(user, enemy);
 			break;
+		case 4:
+			RunQuickMode(user, enemy);
+			break;
 		case 0:
 			running = false;
 			break;
 		default:
-			cout << "请输入0-3之间的选项。" << endl;
+			cout << "请输入0-4之间的选项。" << endl;
 			break;
 		}
 	}

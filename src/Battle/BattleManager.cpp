@@ -4,6 +4,7 @@
 #include <cmath>
 #include "LogM.h"
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 // ==================== 构造函数 ====================
@@ -90,6 +91,8 @@ BattleCharacter* BattleManager::getBatCharById(int battleId)
 BattleManager::Result BattleManager::runBattle()
 {
     log("战斗开始");
+    logTeamState("我方初始", userTeam_);
+    logTeamState("敌方初始", enemyTeam_);
     // 触发开局技能
     calculateActionOrder();
     triggerSkills(SkillTrigger::BATTLE_START);
@@ -107,6 +110,8 @@ BattleManager::Result BattleManager::runBattle()
             LOG_ERROR("Unexpected battle result");
             break;
     }
+    logTeamState("战后我方", userTeam_);
+    logTeamState("战后敌方", enemyTeam_);
     
     return result_;
 }
@@ -139,6 +144,9 @@ BattleManager::Result BattleManager::executeRound()
     
     // 4. 回合结束阶段，处理buff等
     onRoundEnd();
+    log("====== 回合 " + to_string(round_) + " 结束 ======");
+    logTeamState("我方", userTeam_);
+    logTeamState("敌方", enemyTeam_);
     
     // 5. 检查战斗结果
     result_ = checkBattleResult();
@@ -164,6 +172,8 @@ void BattleManager::onRoundStart()
     triggerOnRoundX();
     // 触发回合开始技能
     triggerSkills(SkillTrigger::ROUND_START);
+    logTeamState("我方", userTeam_);
+    logTeamState("敌方", enemyTeam_);
 }
 
 void BattleManager::onRoundEnd()
@@ -195,6 +205,11 @@ void BattleManager::calculateActionOrder()
             }
         }
     }
+    if (!actionOrder_.empty()) {
+        log("  行动顺序: " + formatActionOrder());
+    } else {
+        log("  行动顺序: 无可行动单位");
+    }
 }
 
 // ==================== 行动执行（最核心战斗逻辑） ====================
@@ -204,6 +219,9 @@ void BattleManager::executeAction(BattleCharacter* actor)
         return;
     }
     actor->hasActed = true;
+    log(actor->name + " 开始行动 (HP:" + to_string(actor->currentAttr.hp) + "/" +
+        to_string(actor->currentAttr.maxHp) + ", 怒:" +
+        to_string(static_cast<int>(actor->currentAttr.rage)) + ")");
     
     // 被控制无法行动
     if (actor->isControlled()) {
@@ -217,6 +235,7 @@ void BattleManager::executeAction(BattleCharacter* actor)
         log(actor->name + " 无法行动，跳过本次行动。");
         return;
     }
+    log(actor->name + " 施放技能 [" + skill->name + "] (ID:" + to_string(skill->id) + ")");
     executeSkill(actor, skill);
     
     // 普攻回怒
@@ -258,6 +277,7 @@ void BattleManager::executeEffect(BattleCharacter* caster, const SkillEffect& ef
     if (targets.empty()) {
         return;
     }
+    log("  效果: " + getEffectName(effect.effect) + " -> 目标数: " + to_string(targets.size()));
     
     // 对每个目标应用效果
     for (BattleCharacter* target : targets) {
@@ -721,6 +741,9 @@ void BattleManager::triggerSkills(SkillTrigger trigger, BattleCharacter* specifi
         return;
     }
     const auto* skillList = specificCharacter->getSkills(trigger);
+    if (skillList == nullptr) {
+        return;
+    }
     for (const Skill& skill : *skillList) {
         if (skill.id == 0) {
             continue;
@@ -774,6 +797,7 @@ void BattleManager::checkDeaths()
         if (ch.currentAttr.hp <= 0 && ch.isAlive) {
             ch.isAlive = false;
             ch.currentAttr.hp = 0;
+            LOG_INFO("%s 阵亡！", ch.name.c_str());
             triggerSkills(SkillTrigger::ON_DEATH, &ch);
         }
     }
@@ -849,6 +873,68 @@ bool BattleManager::rollChance(int percent) {
     
     uniform_int_distribution<int> dist(1, 100);
     return dist(rng_) <= percent;
+}
+
+std::string BattleManager::formatCharacterState(const BattleCharacter& ch) const
+{
+    std::ostringstream oss;
+    oss << ch.name << "(ID:" << ch.battleId << ", HP " << ch.currentAttr.hp
+        << "/" << ch.currentAttr.maxHp << ", 怒" << static_cast<int>(ch.currentAttr.rage);
+    if (ch.shieldValue > 0) {
+        oss << ", 盾" << ch.shieldValue;
+    }
+    if (!ch.isAlive) {
+        oss << ", 阵亡";
+    }
+    if (!ch.buffs.empty()) {
+        oss << ", Buff" << ch.buffs.size();
+    }
+    oss << ")";
+    return oss.str();
+}
+
+std::string BattleManager::formatTeamState(const std::vector<BattleCharacter>& team, const std::string& label) const
+{
+    std::ostringstream oss;
+    oss << label << ": ";
+    if (team.empty()) {
+        oss << "暂无单位";
+        return oss.str();
+    }
+    bool first = true;
+    for (const auto& ch : team) {
+        if (!first) {
+            oss << " | ";
+        }
+        oss << formatCharacterState(ch);
+        first = false;
+    }
+    return oss.str();
+}
+
+std::string BattleManager::formatActionOrder() const
+{
+    std::ostringstream oss;
+    bool first = true;
+    for (const auto* ch : actionOrder_) {
+        if (!ch) {
+            continue;
+        }
+        if (!first) {
+            oss << " -> ";
+        }
+        oss << ch->name << "(ID:" << ch->battleId << ", 速" << ch->currentAttr.speed << ")";
+        first = false;
+    }
+    if (first) {
+        return "无";
+    }
+    return oss.str();
+}
+
+void BattleManager::logTeamState(const std::string& label, const std::vector<BattleCharacter>& team)
+{
+    log(formatTeamState(team, label));
 }
 
 void BattleManager::setLogCallback(LogCallback callback)

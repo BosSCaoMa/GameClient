@@ -103,6 +103,10 @@ private:
     void log(const std::string& message);
     std::string getEffectName(EffectType type) const;
     bool rollChance(int percent);
+    std::string formatCharacterState(const BattleCharacter& ch) const;
+    std::string formatTeamState(const std::vector<BattleCharacter>& team, const std::string& label) const;
+    std::string formatActionOrder() const;
+    void logTeamState(const std::string& label, const std::vector<BattleCharacter>& team);
 
 private:
     // ==================== 成员变量 ====================
