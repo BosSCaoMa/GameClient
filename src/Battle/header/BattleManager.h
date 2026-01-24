@@ -5,6 +5,7 @@
 #include <functional>
 #include <string>
 #include <array>
+#include <unordered_map>
 #include "BattleCharacter.h"
 
 class Player;
@@ -107,6 +108,10 @@ private:
     std::string formatTeamState(const std::vector<BattleCharacter>& team, const std::string& label) const;
     std::string formatActionOrder() const;
     void logTeamState(const std::string& label, const std::vector<BattleCharacter>& team);
+    void logDamageSummary();
+    void logDamageForTeam(const std::vector<BattleCharacter>& team, const std::string& label);
+    void resetDamageStats();
+    void recordDamage(BattleCharacter* caster, int64_t damage);
 
 private:
     // ==================== 成员变量 ====================
@@ -119,6 +124,7 @@ private:
     std::vector<BattleCharacter> userTeam_;
     std::vector<BattleCharacter> enemyTeam_;
     std::unordered_map<int, BattleCharacter*> unitMap; // battleId -> BattleCharacter*
+    std::unordered_map<int, int64_t> damageStats_;      // battleId -> total damage dealt
     // 行动顺序
     std::vector<BattleCharacter*> actionOrder_;
     

@@ -5,6 +5,7 @@
 #include "LogM.h"
 #include <iostream>
 #include <sstream>
+#include <utility>
 
 using namespace std;
 // ==================== 构造函数 ====================
@@ -37,6 +38,7 @@ void BattleManager::initBattle()
     
     createBattleCharacters();
     buildUnitMap();
+    resetDamageStats();
 }
 
 void BattleManager::createBattleCharacters()
@@ -112,6 +114,7 @@ BattleManager::Result BattleManager::runBattle()
     }
     logTeamState("战后我方", userTeam_);
     logTeamState("战后敌方", enemyTeam_);
+    logDamageSummary();
     
     return result_;
 }
@@ -299,7 +302,15 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::DAMAGE: 
         case EffectType::PIERCE: {
             int64_t damage = calculateDamage(caster, target, effect);
+            const int64_t prevHp = target->currentAttr.hp;
+            const int64_t prevShield = target->shieldValue;
             target->takeDamage(damage, effect.effect != EffectType::PIERCE);
+            const int64_t hpLoss = std::max<int64_t>(0, prevHp - target->currentAttr.hp);
+            const int64_t shieldLoss = std::max<int64_t>(0, prevShield - target->shieldValue);
+            const int64_t appliedDamage = hpLoss + shieldLoss;
+            if (appliedDamage > 0) {
+                recordDamage(caster, appliedDamage);
+            }
             if (!target->isAlive) {
                 triggerSkills(SkillTrigger::ON_KILL, caster);
                 break;
@@ -318,7 +329,15 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         }
         case EffectType::TRUE_DAMAGE: {
             int64_t damage = calculateTrueDamage(caster, target, effect);
+            const int64_t prevHp = target->currentAttr.hp;
+            const int64_t prevShield = target->shieldValue;
             target->takeDamage(damage, false);
+            const int64_t hpLoss = std::max<int64_t>(0, prevHp - target->currentAttr.hp);
+            const int64_t shieldLoss = std::max<int64_t>(0, prevShield - target->shieldValue);
+            const int64_t appliedDamage = hpLoss + shieldLoss;
+            if (appliedDamage > 0) {
+                recordDamage(caster, appliedDamage);
+            }
             log("  - " + target->name + " 受到 " + to_string(damage) + " 点真实伤害 (剩余HP: " +
                 to_string(target->currentAttr.hp) + ")");
             triggerSkills(SkillTrigger::ON_HIT, target);
@@ -935,6 +954,70 @@ std::string BattleManager::formatActionOrder() const
 void BattleManager::logTeamState(const std::string& label, const std::vector<BattleCharacter>& team)
 {
     log(formatTeamState(team, label));
+}
+
+void BattleManager::logDamageSummary()
+{
+    if (userTeam_.empty() && enemyTeam_.empty()) {
+        return;
+    }
+    log("====== 伤害统计 ======");
+    logDamageForTeam(userTeam_, "我方");
+    logDamageForTeam(enemyTeam_, "敌方");
+}
+
+void BattleManager::logDamageForTeam(const std::vector<BattleCharacter>& team, const std::string& label)
+{
+    if (team.empty()) {
+        log(label + " 无参战单位");
+        return;
+    }
+    std::vector<std::pair<const BattleCharacter*, int64_t>> records;
+    records.reserve(team.size());
+    for (const auto& ch : team) {
+        int64_t dmg = 0;
+        auto it = damageStats_.find(ch.battleId);
+        if (it != damageStats_.end()) {
+            dmg = it->second;
+        }
+        records.emplace_back(&ch, dmg);
+    }
+    std::sort(records.begin(), records.end(), [](const auto& lhs, const auto& rhs) {
+        if (lhs.second == rhs.second) {
+            return lhs.first->battleId < rhs.first->battleId;
+        }
+        return lhs.second > rhs.second;
+    });
+    std::ostringstream oss;
+    oss << label << "伤害: ";
+    bool first = true;
+    for (const auto& entry : records) {
+        if (!first) {
+            oss << " | ";
+        }
+        oss << entry.first->name << "(ID:" << entry.first->battleId << ")=" << entry.second;
+        first = false;
+    }
+    log(oss.str());
+}
+
+void BattleManager::resetDamageStats()
+{
+    damageStats_.clear();
+    for (const auto& ch : userTeam_) {
+        damageStats_[ch.battleId] = 0;
+    }
+    for (const auto& ch : enemyTeam_) {
+        damageStats_[ch.battleId] = 0;
+    }
+}
+
+void BattleManager::recordDamage(BattleCharacter* caster, int64_t damage)
+{
+    if (!caster || damage <= 0) {
+        return;
+    }
+    damageStats_[caster->battleId] += damage;
 }
 
 void BattleManager::setLogCallback(LogCallback callback)
