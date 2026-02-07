@@ -53,6 +53,7 @@ void BattleManager::createBattleCharacters()
         Character* ch = userPlayer_->getCharacter(charId);
         if (ch) {
             userTeam_.emplace_back(ch, idx++);
+            userTeam_.back().setLogger(logCallback_);
         }
     }
     idx = 1;
@@ -65,6 +66,7 @@ void BattleManager::createBattleCharacters()
         Character* ch = enemyPlayer_->getCharacter(charId);
         if (ch) {
             enemyTeam_.emplace_back(ch, -idx++);
+            enemyTeam_.back().setLogger(logCallback_);
         }
     }
 }
@@ -238,13 +240,17 @@ void BattleManager::executeAction(BattleCharacter* actor)
         log(actor->name + " 无法行动，跳过本次行动。");
         return;
     }
-    log(actor->name + " 施放技能 [" + skill->name + "] (ID:" + to_string(skill->id) + ")");
-    executeSkill(actor, skill);
-    
-    // 普攻回怒
     if (skill->trigger == SkillTrigger::NORMAL_ATTACK) {
         actor->addRage(1);
+        log(actor->name + " 进行普攻，获得1点怒气" + 
+            " (当前怒气: " + to_string(static_cast<int>(actor->currentAttr.rage)) + ")");
+    } else {
+        actor->addRage(-4);
+        log(actor->name + " 使用技能 [" + skill->name + "] (ID:" + to_string(skill->id) + 
+            ")，消耗4点怒气" + " (当前怒气: " + to_string(static_cast<int>(actor->currentAttr.rage)) + ")");
     }
+    executeSkill(actor, skill);
+    
     // 处理buff效果提前到行动结束
     if (actor->isAlive) {
         actor->tickBuffs();
@@ -388,6 +394,7 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::SILENCE:
         case EffectType::FREEZE:
             triggerSkills(SkillTrigger::ON_CONTROL, target);
+            [[fallthrough]];
         // ====== 特殊状态 ======
         case EffectType::BARRIER:
         case EffectType::INJURY:
@@ -522,6 +529,7 @@ int64_t BattleManager::calculateDamage(BattleCharacter* caster, BattleCharacter*
 int64_t BattleManager::calculateHeal(BattleCharacter* caster, BattleCharacter* target,
      const SkillEffect& effect)
 {
+    (void)target; // 目前治疗效果不受目标属性影响，预留参数以备后续扩展
     int64_t heal = calculateValue(caster, effect);
     // 治疗加成
     heal = heal * (100 + caster->currentAttr.healBonus) / 100;
@@ -589,8 +597,10 @@ vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, Targ
             for (auto& ch : allyTeam) {
                 if (ch.isAlive && ch.isInFrontRow()) targets.push_back(&ch);
             }
-            return targets;
-            
+            if (!targets.empty()) {
+                return targets;
+            } // 前排没有目标时，改为选择后排
+            [[fallthrough]];
         case TargetType::ALLY_BACK_ROW:
             for (auto& ch : allyTeam) {
                 if (ch.isAlive && !ch.isInFrontRow()) targets.push_back(&ch);
@@ -645,9 +655,9 @@ vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, Targ
             int count = static_cast<int>(type) - static_cast<int>(TargetType::ENEMY_RANDOM_1) + 1;
             return selectRandom(enemyTeamRef, count);
             return {};
-        
+        }
         default:
-            return {nullptr};
+            return {};
     }
     
     return targets;
@@ -1026,6 +1036,12 @@ void BattleManager::recordDamage(BattleCharacter* caster, int64_t damage)
 void BattleManager::setLogCallback(LogCallback callback)
 {
     logCallback_ = callback;
+    for (auto& ch : userTeam_) {
+        ch.setLogger(logCallback_);
+    }
+    for (auto& ch : enemyTeam_) {
+        ch.setLogger(logCallback_);
+    }
 }
 
 BattleManager::Result BattleManager::getResult() const {

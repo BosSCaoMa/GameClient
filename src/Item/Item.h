@@ -27,9 +27,9 @@ struct Equipment {
     // std::vector<EquipmentAffix> mainAffixs;
     // std::vector<EquipmentAffix> subAffixes;
     BattleAttr baseAttrs; // 装备基础属性加成
-    int skillId;  // 装备携带的技能ID列表
-    // 套装ID
-    int setId;
+    int skillId;  // 装备携带的技能ID
+    
+    int setId; // 所属套装ID，0表示不属于任何套装
     
     Equipment() = default;
     
@@ -40,13 +40,10 @@ struct Equipment {
 
     bool hasSkill() const { return skillId != 0; }
 
-    // 传入角色的基础属性，返回装备加成的属性
-    // BattleAttr calculateTotalAttr(const BattleAttr& charAttr) const;
     std::string GetDescription() const {return name;} // NTODO 完善描述;
 };
 
 // ==================== 套装效果 ====================
-class Skill; // 前向声明
 struct SetBonus {
     int setId;
     std::string name;

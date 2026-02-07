@@ -108,7 +108,8 @@ void Player::updateCombatPower() {
     // 考虑武将等等
 }
 
-uint64_t Player::calculateCharacterPower(const Character* ch) const {
+uint64_t Player::calculateCharacterPower(const Character* ch) const{
+    (void)ch; // 目前未实现具体计算逻辑，预留参数以备后续扩展
     uint64_t power = 0;
 
     return power;
@@ -198,7 +199,7 @@ bool Package::addEquipment(const Equipment& equip)
 // 上装备或出售进行移除
 bool Package::removeEquipment(int index)
 {
-    if (index < 0 || index >= equipments.size()) {
+    if (index < 0 || index >= static_cast<int>(equipments.size())) {
         return false;
     }
     equipments.erase(equipments.begin() + index);
@@ -207,7 +208,7 @@ bool Package::removeEquipment(int index)
 
 const Equipment* Package::getEquipment(int index) const
 {
-    if (index < 0 || index >= equipments.size()) {
+    if (index < 0 || index >= static_cast<int>(equipments.size())) {
         return nullptr;
     }
     return &equipments[index];

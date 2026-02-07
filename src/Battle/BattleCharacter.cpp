@@ -1,6 +1,7 @@
 #include "BattleCharacter.h"
 #include "LogM.h"
 #include <limits>
+#include <string>
 
 using namespace std;
 
@@ -17,6 +18,20 @@ BattleCharacter::BattleCharacter(Character* ch, int battleId)
     // 复制技能
     for (const auto& pair : ch->skills) {
         skills[pair.first] = pair.second;
+    }
+}
+
+void BattleCharacter::setLogger(LogCallback callback)
+{
+    logger_ = std::move(callback);
+}
+
+void BattleCharacter::log(const std::string& message) const
+{
+    if (logger_) {
+        logger_(message);
+    } else {
+        LOG_DEBUG("%s", message.c_str());
     }
 }
 
@@ -42,11 +57,15 @@ void BattleCharacter::addBuff(EffectType type, int64_t value, int duration, int 
             b.duration = std::max(b.duration, duration);
             b.value = value;
             recalculateAttr();
+            log(name + " 刷新状态 type=" + std::to_string(static_cast<int>(type)) +
+                " value=" + std::to_string(value) + " duration=" + std::to_string(duration));
             return;
         }
     }
     buffs.emplace_back(type, value, duration, sourceId);
     recalculateAttr();
+    log(name + " 获得状态 type=" + std::to_string(static_cast<int>(type)) +
+        " value=" + std::to_string(value) + " duration=" + std::to_string(duration));
 }
 
 void BattleCharacter::tickBuffs()
@@ -192,14 +211,21 @@ bool BattleCharacter::isSilenced() const {
 void BattleCharacter::takeDamage(int64_t damage, bool canBeShielded)
 {
     if (damage <= 0 || isInvincible()) {
+        if (damage > 0 && isInvincible()) {
+            log(name + " 处于无敌，免疫伤害 " + std::to_string(damage));
+        }
         return;
     }
 
+    int64_t incoming = damage;
+    int64_t shieldConsumed = 0;
     if (canBeShielded && shieldValue > 0) {
         if (shieldValue >= damage) {
+            shieldConsumed = damage;
             shieldValue -= damage;
-            return;
+            damage = 0;
         } else {
+            shieldConsumed = shieldValue;
             damage -= shieldValue;
             shieldValue = 0;
         }
@@ -215,21 +241,38 @@ void BattleCharacter::takeDamage(int64_t damage, bool canBeShielded)
             isAlive = false;
         }
     }
+    const int64_t applied = std::max<int64_t>(0, incoming - shieldConsumed);
+    log(name + " 受到伤害: 实际=" + std::to_string(applied) +
+        " 护盾抵消=" + std::to_string(shieldConsumed) +
+        " 剩余HP=" + std::to_string(currentAttr.hp));
 }
 
 void BattleCharacter::heal(int64_t amount) {
     if (!isAlive || amount <= 0 || hasInjury()) {
         return;
     }
+    const int64_t before = currentAttr.hp;
     currentAttr.hp = std::min(currentAttr.hp + amount, currentAttr.maxHp);
+    const int64_t healed = currentAttr.hp - before;
+    if (healed > 0) {
+        log(name + " 恢复生命 " + std::to_string(healed) +
+            " (当前HP " + std::to_string(currentAttr.hp) + ")");
+    }
 }
 
 void BattleCharacter::addRage(int amount) {
+    const int before = currentAttr.rage;
     currentAttr.rage = std::clamp(currentAttr.rage + amount, 0, 6); // 【设定】假设最大怒气为6
+    if (currentAttr.rage != before) {
+        log(name + " 怒气变动 " + std::to_string(before) + " -> " +
+            std::to_string(currentAttr.rage));
+    }
 }
 
 void BattleCharacter::addShield(int64_t amount) {
     shieldValue += amount;
+    log(name + " 增加护盾 " + std::to_string(amount) +
+        " (当前护盾 " + std::to_string(shieldValue) + ")");
 }
 
 int BattleCharacter::dispelBuffs(int count)
@@ -261,6 +304,7 @@ int BattleCharacter::transferDebuffsTo(BattleCharacter* target, int count)
     }
     if (moved > 0) {
         recalculateAttr();
+        log(name + " 转移 " + std::to_string(moved) + " 个负面状态给 " + target->name);
     }
     return moved;
 }
@@ -288,16 +332,24 @@ Skill* BattleCharacter::getNormalAttack() {
     return getSkill(SkillTrigger::NORMAL_ATTACK);
 }
 
-Skill* BattleCharacter::GetAction() {
+Skill* BattleCharacter::GetAction()
+{
     // todo: 合击技能等
     if (currentAttr.rage >= 4) {
-        Skill* skill = getSkill(SkillTrigger::RAGE_SKILL);
-        if (skill) {
+        if (Skill* skill = getSkill(SkillTrigger::RAGE_SKILL)) {
+            log(name + " 选择怒气技能 [" + skill->name + "](ID:" +
+                std::to_string(skill->id) + ")");
             return skill;
         }
-    } else {
-        return getNormalAttack();
     }
+    Skill* normal = getNormalAttack();
+    if (normal) {
+        log(name + " 选择普攻 [" + normal->name + "](ID:" +
+            std::to_string(normal->id) + ")");
+    } else {
+        log(name + " 没有可用技能，只能跳过");
+    }
+    return normal;
 }
 
 bool BattleCharacter::hasBuffOfType(EffectType type) const

@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <random>
 #include <unordered_map>
+#include <functional>
+#include <utility>
+    using LogCallback = std::function<void(const std::string&)>;
 class BattleCharacter {
 public:
     Character* original;        // 原始角色
@@ -27,6 +30,7 @@ public:
     // int64_t longqiShieledValue = 0; // 龙骑护盾值
 public:
     BattleCharacter(Character* ch, int battleId);
+    void setLogger(LogCallback callback);
 
     // ==================== Buff管理 ====================
     void addBuff(EffectType type, int64_t value, int duration, int sourceId = 0);
@@ -67,6 +71,7 @@ public:
     Skill* GetAction();
 
 private:
+    LogCallback logger_ = nullptr;
     bool hasBuffOfType(EffectType type) const;
 
     bool hasInjury() const;
@@ -80,4 +85,6 @@ private:
     int removeBuffsInternal(bool removeDebuff, int count);
 
     int removeBuffsByType(EffectType type, int count = 1);
+
+    void log(const std::string& message) const;
 };

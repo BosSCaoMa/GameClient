@@ -32,15 +32,34 @@ std::string GetDescByBreakthrough(int breakthrough)
         default: return "神尊";
     }
 }
+}
 
 // ==================== 构造函数 ====================
-Character::Character() 
-    : id(0), level(1), star(1), quality(QualityType::WHITE)
-    , exp(0), expMax(100), breakthrough(0) {}
+Character::Character()
+    : id(0)
+    , relid(0)
+    , name()
+    , quality(QualityType::WHITE)
+    , position(Position::WARRIOR)
+    , baseName()
+    , exp(0)
+    , expMax(100)
+    , breakthrough(0)
+    , level(1)
+    , star(1) {}
 
 Character::Character(int id_, const std::string& name_, QualityType quality_, Position position_)
-    : id(id_), name(name_), quality(quality_), position(position_), level(1), star(1), exp(0), breakthrough(0),
-    baseName(name_)
+    : id(id_)
+    , relid(0)
+    , name(name_)
+    , quality(quality_)
+    , position(position_)
+    , baseName(name_)
+    , exp(0)
+    , expMax(0)
+    , breakthrough(0)
+    , level(1)
+    , star(1)
 {
     initExpMax();
 };
@@ -104,7 +123,6 @@ void Character::unequipItem(EquipmentType type) {
     if (equipIt == equipments.end()) {
         return;
     }
-
     int removedSkillId = equipIt->second.skillId;
     equipments.erase(equipIt);
 
@@ -130,9 +148,6 @@ const Equipment* Character::getEquipment(EquipmentType type) const {
     return it != equipments.end() ? &it->second : nullptr;
 }
 
-bool Character::hasEquipment(EquipmentType type) const {
-    return equipments.find(type) != equipments.end();
-}
 
 // ==================== 属性计算 ====================
 void Character::recalculateAttr() {

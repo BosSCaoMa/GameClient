@@ -44,8 +44,6 @@ public:
     // ==================== 装备 ====================
     std::unordered_map<EquipmentType, Equipment> equipments;
     
-
-
     // ==================== 构造函数 ====================
     Character();
     Character(int id_, const std::string& name_, QualityType quality_, Position position_);
@@ -60,7 +58,7 @@ public:
     void equipItem(const Equipment& equip);
     void unequipItem(EquipmentType type);
     const Equipment* getEquipment(EquipmentType type) const;
-    bool hasEquipment(EquipmentType type) const;
+
     
     // ==================== 属性计算 ====================
     void recalculateAttr();
