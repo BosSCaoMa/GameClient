@@ -4,6 +4,7 @@
 #include <vector>
 #include "SkillEffect.h"
 #include <functional>
+#include <utility>
 // ==================== Buff实例 ====================
 struct Buff {
     EffectType type; // Buff类型
@@ -11,9 +12,10 @@ struct Buff {
     int duration; // 剩余回合
     int sourceId; // 来源技能ID（用于Buff刷新判断）
     bool isDebuff; // 是否为负面效果
-    
-    Buff(EffectType t, int64_t v, int dur, int src = 0)
-        : type(t), value(v), duration(dur), sourceId(src) {
+    bool canOverlay; // 是否可叠加
+
+    Buff(EffectType t, int64_t v, int dur, int src = 0, bool overlay = false)
+        : type(t), value(v), duration(dur), sourceId(src), canOverlay(overlay) {
         isDebuff = IsDebuff(t, value);
     }
     
@@ -32,16 +34,13 @@ public:
     SkillTrigger trigger; // 触发时机
     std::vector<SkillEffect> effects; // 效果列表
     
-    using CallbackFunc = std::function<void(BattleCharacter*, BattleManager*)>;
-    bool HasOnTrigger() const {
-        if (onTrigger) {
-            return true;
-        }
-        return false;
+    using EffectHandler = std::function<void(BattleCharacter*, BattleManager*)>;
+    bool HasEffectHandler() const {
+        return static_cast<bool>(effectHandler);
     }
-    CallbackFunc onTrigger; // 触发回调（可选）
-    void setOnTrigger(CallbackFunc cb) { // 设置技能回调函数
-        onTrigger = cb;
+    EffectHandler effectHandler; // 自定义技能效果处理函数
+    void setEffectHandler(EffectHandler handler) {
+        effectHandler = std::move(handler);
     }
 
     Skill() = default;

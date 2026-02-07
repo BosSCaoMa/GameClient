@@ -7,7 +7,6 @@
 #include "BattleTypes.h"
 
 // ==================== 战斗属性（使用明确命名，避免魔法索引） ====================
-// BattleAttr.h
 struct BattleAttr final {   // 相互关联 【 AffixType applyAffix 】 【 EffectType applyEffect 】【 BattleAttr 】
     using Scalar = std::int64_t;
     using Rate = std::int16_t;
@@ -52,7 +51,7 @@ struct BattleAttr final {   // 相互关联 【 AffixType applyAffix 】 【 Eff
     
     BattleAttr() = default;
     constexpr BattleAttr(Scalar hp_, Scalar atk_, Scalar def_, Scalar speed_) noexcept
-        : hp(hp_), maxHp(hp_), atk(atk_), def(def_), speed(speed_) {}
+        : hp(hp_), maxHp(hp_), atk(atk_), def(def_), speed(speed_) {} // 编译器常量，如果传入的参数也是常量的话，可以在编译时计算结果
     
     // 属性相加
     BattleAttr& operator+=(const BattleAttr& other);

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <unordered_set>
+#include <array>
 // ==================== 目标类型 ====================
 enum class TargetType {
     // 基础阵营类型（保留原有核心类型，统一命名风格）
@@ -51,11 +51,12 @@ enum class ValueType {
     PERCENT_DEF,        // 防御力百分比
     PERCENT_MAX_HP,     // 最大生命值百分比
     PERCENT_CUR_HP,     // 当前生命值百分比
-    PERCENT_LOST_HP,    // 已损失生命值百分比
+    PERCENT_LOST_HP,    // 已损失生命值
     PERCENT_TARGET_MAXHP,  // 目标最大生命值百分比
 };
 
 // ==================== 效果类型 ====================
+// 控制类型和负面效果额外添加到kIntrinsicDebuffEffects和kControlEffects中
 enum class EffectType {
     NONE = 0,
     
@@ -65,6 +66,7 @@ enum class EffectType {
     TRUE_DAMAGE,        // 真实伤害（无视防御/减伤/抗性，直接生效）
     HEAL,               // 治疗
     RAGE_CHANGE,           // 增加怒气
+    DIVINE_POWER,          // 神威值(更高级的怒气机制，提供额外效果)
 
     // 护盾
     SHIELD,             // 护盾
@@ -85,7 +87,6 @@ enum class EffectType {
 
     // ================负面效果开始====================
     // 控制
-    DEBUFF_BEGIN,
     STUN,               // 眩晕（无法行动）
     FREEZE,             // 冰冻（无法行动，受到伤害解除）
     SILENCE,            // 沉默（无法释放技能，只能普攻）
@@ -97,8 +98,6 @@ enum class EffectType {
     BURN,               // 灼烧(减缓速度)
     BLEED,              // 流血(直接损失体力值)
     CURSE,              // 诅咒（持续损失怒气+少量生命值）
-
-    DEBUFF_END,
     // ================负面效果结束=====================
 
     // 特殊
@@ -117,9 +116,45 @@ enum class EffectType {
     MARK_PROTECT,       // 保护标记（友方攻击时，优先攻击标记持有者）
 };
 
+template <std::size_t N>
+constexpr bool ContainsEffect(const std::array<EffectType, N>& bucket, EffectType type)
+{
+    for (const auto entry : bucket) {
+        if (entry == type) {
+            return true;
+        }
+    }
+    return false;
+}
+
+constexpr auto kIntrinsicDebuffEffects = std::array{
+    EffectType::STUN,
+    EffectType::FREEZE,
+    EffectType::SILENCE,
+    EffectType::TAUNT,
+    EffectType::INJURY,
+    EffectType::POISON,
+    EffectType::BURN,
+    EffectType::BLEED,
+    EffectType::CURSE,
+};
+
+constexpr auto kControlEffects = std::array{
+    EffectType::STUN,
+    EffectType::FREEZE,
+    EffectType::SILENCE,
+    EffectType::TAUNT,
+    EffectType::INJURY,
+};
+
+inline bool IsIntrinsicDebuff(EffectType type)
+{
+    return ContainsEffect(kIntrinsicDebuffEffects, type);
+}
+
 inline bool IsDebuff(EffectType type, int64_t value)
 {
-    if (type >= EffectType::DEBUFF_BEGIN && type <= EffectType::DEBUFF_END) {
+    if (IsIntrinsicDebuff(type)) {
         return true;
     }
     return value < 0;
@@ -127,9 +162,7 @@ inline bool IsDebuff(EffectType type, int64_t value)
 
 inline bool IsControlEffect(EffectType type)
 {
-    return type == EffectType::STUN ||
-        type == EffectType::SILENCE || type == EffectType::FREEZE ||
-        type == EffectType::TAUNT || type == EffectType::INJURY;
+    return ContainsEffect(kControlEffects, type);
 }
 
 // ==================== 技能触发时机 ====================
@@ -170,11 +203,11 @@ enum class QualityType {
 };
 
 enum class Position {
-    WARRIOR,
-    MAGE,
-    TANK,
-    HEALER,
-    ASSASSIN
+    WARRIOR,    // 战士
+    MAGE,   // 法师
+    TANK,   // 坦克
+    HEALER,  // 治疗
+    ASSASSIN // 刺客
 };
 
 

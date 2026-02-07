@@ -36,9 +36,9 @@ void BattleCharacter::addBuff(EffectType type, int64_t value, int duration, int 
     if (BuffIsOffset(type)) {
         return;
     }
-    // 同类型同来源刷新
+    // 同类型同来源刷新, id为0代表可叠加，id不为0但sourceId相同则刷新持续时间和数值
     for (auto& b : buffs) {
-        if (b.type == type && b.sourceId == sourceId) {
+        if (sourceId != 0 && b.type == type && b.sourceId == sourceId) {
             b.duration = std::max(b.duration, duration);
             b.value = value;
             recalculateAttr();
@@ -247,7 +247,7 @@ int BattleCharacter::transferDebuffsTo(BattleCharacter* target, int count)
     if (!target) {
         return 0;
     }
-    int limit = count <= 0 ? std::numeric_limits<int>::max() : count;
+    int limit = count <= 0 ? std::numeric_limits<int>::max() : count; // count为0或负数表示转移所有
     int moved = 0;
     auto it = buffs.begin();
     while (it != buffs.end() && moved < limit) {

@@ -2,6 +2,9 @@
 #include "BattleTypes.h"
 
 // 只声明结构体和成员函数，不提供实现
+/*
+    技能效果：目标类型、效果类型、数值类型、数值、持续时间、触发概率、是否可叠加
+*/
 struct SkillEffect {
     // 成员变量声明
     TargetType target;
@@ -10,10 +13,11 @@ struct SkillEffect {
     int64_t value;
     int duration;       // 持续时间: 0 = 即时
     int chance;         // 触发概率: 100 = 100%
+    bool canOverlay;     // 是否可叠加（同类型Buff是否覆盖或叠加）
     // 构造函数声明
     SkillEffect();
     SkillEffect(TargetType t, EffectType e, ValueType vt, int64_t v, 
-                int dur = 0, int ch = 100);
+                int dur = 0, int ch = 100, bool overlay = false);
     
     static SkillEffect Damage_PA(TargetType t, int64_t atkPercent, int ch = 100);
     static SkillEffect DamageFixed(TargetType t, int64_t value, int ch = 100);

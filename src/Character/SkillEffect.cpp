@@ -1,7 +1,7 @@
 #include "SkillEffect.h"
 
 // 构造函数实现
-SkillEffect::SkillEffect() 
+SkillEffect::SkillEffect()
     : target(TargetType::SELF)
     , effect(EffectType::NONE)
     , valueType(ValueType::FIXED)
@@ -10,9 +10,9 @@ SkillEffect::SkillEffect()
     , chance(100) {}
 
 SkillEffect::SkillEffect(TargetType t, EffectType e, ValueType vt, int64_t v, 
-            int dur, int ch)
+            int dur, int ch, bool overlay)
     : target(t), effect(e), valueType(vt), value(v), 
-      duration(dur), chance(ch) {}
+      duration(dur), chance(ch), canOverlay(overlay) {}
 
 // ==================== 1、伤害类实现 ====================
 SkillEffect SkillEffect::Damage_PA(TargetType t, int64_t atkPercent, int ch) {

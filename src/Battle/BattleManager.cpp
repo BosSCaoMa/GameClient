@@ -258,8 +258,8 @@ void BattleManager::executeSkill(BattleCharacter* caster, Skill* skill)
         LOG_ERROR("Invalid caster or skill in executeSkill");
         return;
     }
-    if (skill->HasOnTrigger()) {
-        skill->onTrigger(caster, this);
+    if (skill->HasEffectHandler()) {
+        skill->effectHandler(caster, this);
     }
     for (const SkillEffect& effect : skill->effects) {
         executeEffect(caster, effect, skill->id);
@@ -379,7 +379,7 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         // ===== 持续BUFF =====
         case EffectType::BUFF_REGEN: {
             int64_t buffValue = calculateValue(caster, effect, target);
-            target->addBuff(effect.effect, buffValue, effect.duration, skillId);
+            target->addBuff(effect.effect, buffValue, effect.duration, effect.canOverlay ? 0 : skillId);
             log("  - " + target->name + " 获得状态 " + getEffectName(effect.effect));
             break;
         }
@@ -394,7 +394,7 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::LOCK_BLEED:
         case EffectType::IMMUNITY:
         case EffectType::INVINCIBLE: {
-            target->addBuff(effect.effect, effect.value, effect.duration, skillId);
+            target->addBuff(effect.effect, effect.value, effect.duration, effect.canOverlay ? 0 : skillId);
             log("  - " + target->name + " 获得状态 " + getEffectName(effect.effect));
             break;
         }
@@ -405,14 +405,14 @@ void BattleManager::applyEffect(BattleCharacter* caster, BattleCharacter* target
         case EffectType::BLEED:
         case EffectType::CURSE: {
             int64_t dotDamage = calculateValue(caster, effect, target);
-            target->addBuff(effect.effect, dotDamage, effect.duration, skillId);
+            target->addBuff(effect.effect, dotDamage, effect.duration, effect.canOverlay ? 0 : skillId);
             break;
         }
         
         // ===== 嘲讽 =====
         case EffectType::TAUNT: {
             triggerSkills(SkillTrigger::ON_CONTROL, target);
-            target->addBuff(effect.effect, caster->battleId, effect.duration, skillId);
+            target->addBuff(effect.effect, caster->battleId, effect.duration, effect.canOverlay ? 0 : skillId);
             break;
         }
         
@@ -542,8 +542,11 @@ vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, Targ
     // 检查嘲讽，如果为真则必须只攻击嘲讽者
     for (const Buff& b : caster->buffs) {
         if (b.type == EffectType::TAUNT) {
-            targets.push_back(unitMap[b.value]);
-            return targets;
+            auto it = unitMap.find(static_cast<int>(b.value));
+            if (it != unitMap.end() && it->second) {
+                targets.push_back(it->second);
+                return targets;
+            }
         }
     }
     
@@ -641,7 +644,7 @@ vector<BattleCharacter*> BattleManager::getTargets(BattleCharacter* caster, Targ
         case TargetType::ENEMY_RANDOM_3: {
             int count = static_cast<int>(type) - static_cast<int>(TargetType::ENEMY_RANDOM_1) + 1;
             return selectRandom(enemyTeamRef, count);
-        }
+            return {};
         
         default:
             return {nullptr};

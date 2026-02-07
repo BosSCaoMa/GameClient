@@ -5,7 +5,8 @@
 #include <cmath>
 
 namespace {
-bool isExclusiveTrigger(SkillTrigger trigger) {
+bool isExclusiveTrigger(SkillTrigger trigger)
+{
     switch (trigger) {
         case SkillTrigger::NORMAL_ATTACK:
         case SkillTrigger::RAGE_SKILL:
@@ -15,6 +16,21 @@ bool isExclusiveTrigger(SkillTrigger trigger) {
             return false;
     }
 }
+std::string GetDescByBreakthrough(int breakthrough)
+{
+    switch (breakthrough) {
+        case 0: return "";
+        case 1: return "超凡";
+        case 2: return "超凡";
+        case 3: return "绝世";
+        case 4: return "绝世";
+        case 5: return "无双";
+        case 6: return "无双";
+        case 7: return "至尊";
+        case 8: return "至尊";
+        case 9: return "神威";
+        default: return "神尊";
+    }
 }
 
 // ==================== 构造函数 ====================
@@ -23,7 +39,8 @@ Character::Character()
     , exp(0), expMax(100), breakthrough(0) {}
 
 Character::Character(int id_, const std::string& name_, QualityType quality_, Position position_)
-    : id(id_), name(name_), quality(quality_), position(position_), level(1), star(1), exp(0), breakthrough(0)
+    : id(id_), name(name_), quality(quality_), position(position_), level(1), star(1), exp(0), breakthrough(0),
+    baseName(name_)
 {
     initExpMax();
 };
@@ -218,7 +235,14 @@ void Character::DoBreakthrough() {
     if (!canBreakthrough()) return;
     
     breakthrough++;
-    
+    // 处理 baseName / name 可能为空的情况，避免生成类似 "超凡·" 的非法名称
+    std::string suffix = baseName.empty() ? name : baseName;
+    if (suffix.empty()) {
+        // 没有可用的基础名称时，只使用突破描述
+        name = GetDescByBreakthrough(breakthrough);
+    } else {
+        name = GetDescByBreakthrough(breakthrough) + "·" + suffix;
+    }
     // 突破后属性额外加成（可选）
     originAttr.hp += originAttr.maxHp * 5 / 100;
     originAttr.maxHp += originAttr.maxHp * 5 / 100;
