@@ -4,10 +4,12 @@
 #include <algorithm>
 #include <limits>
 #include <sstream>
+#include <clocale>
 
 #include "Player.h"
 #include "CharacterConfig.h"
 #include "BattleManager.h"
+#include "UI/BattleTui.h"
 
 using namespace std;
 
@@ -132,6 +134,16 @@ void StartBattle(Player& user, Player& enemy)
 	cout << "战斗结束：" << ResultToText(result) << endl;
 }
 
+void StartBattleTui(Player& user, Player& enemy)
+{
+	if (!EnsureTeamReady(user, "玩家") || !EnsureTeamReady(enemy, "敌方")) {
+		return;
+	}
+	BattleTui tui;
+	auto result = tui.run(user, enemy);
+	cout << endl << "TUI战斗结束：" << ResultToText(result) << endl;
+}
+
 bool FillQuickTeam(Player& player, const string& label)
 {
 	cout << "请输入" << label << "武将ID（空格分隔，最多6名）：";
@@ -180,9 +192,9 @@ void RunQuickMode(Player& baseUser, Player& baseEnemy)
 	}
 	PrintTeam(quickUser, "玩家(快速)");
 	PrintTeam(quickEnemy, "敌方(快速)");
-	BattleManager manager(&quickUser, &quickEnemy);
-	auto result = manager.runBattle();
-	cout << "快速模式战斗结束：" << ResultToText(result) << endl;
+	BattleTui tui;
+	auto result = tui.run(quickUser, quickEnemy);
+	cout << endl << "快速模式 (TUI) 战斗结束：" << ResultToText(result) << endl;
 }
 
 } // namespace
@@ -194,12 +206,14 @@ void ShowHome()
 	cout<<"2. 添加敌方队伍"<<endl;
 	cout<<"3. 开始战斗"<<endl;
 	cout<<"4. 快速测试模式"<<endl;
+	cout<<"5. TUI 战斗模式"<<endl;
 	cout<<"0. 退出"<<endl;
 	cout<<"请选择操作: ";
 }
 
 int main()
 {
+	setlocale(LC_ALL, "");
 	Player user(1, "玩家1");
 	Player enemy(2, "敌人");
 	bool running = true;
@@ -224,11 +238,14 @@ int main()
 		case 4:
 			RunQuickMode(user, enemy);
 			break;
+		case 5:
+			StartBattleTui(user, enemy);
+			break;
 		case 0:
 			running = false;
 			break;
 		default:
-			cout << "请输入0-4之间的选项。" << endl;
+			cout << "请输入0-5之间的选项。" << endl;
 			break;
 		}
 	}

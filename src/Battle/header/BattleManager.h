@@ -44,12 +44,14 @@ public:
     // 获取当前状态
     Result getResult() const;
     int getRound() const;
+    int getMaxRounds() const;
     bool isOver() const;
     
     // 获取队伍信息
     BattleCharacter* getBatCharById(int battleId);
     const std::vector<BattleCharacter>& getUserTeam() const;
     const std::vector<BattleCharacter>& getEnemyTeam() const;
+    const std::unordered_map<int, int64_t>& getDamageStats() const;
 
 private:
     // ==================== 初始化 ====================

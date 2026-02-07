@@ -1052,6 +1052,10 @@ int BattleManager::getRound() const {
     return round_;
 }
 
+int BattleManager::getMaxRounds() const {
+    return maxRounds_;
+}
+
 bool BattleManager::isOver() const {
     return result_ != Result::ONGOING;
 }
@@ -1062,6 +1066,10 @@ const vector<BattleCharacter>& BattleManager::getUserTeam() const {
 
 const vector<BattleCharacter>& BattleManager::getEnemyTeam() const {
     return enemyTeam_;
+}
+
+const unordered_map<int, int64_t>& BattleManager::getDamageStats() const {
+    return damageStats_;
 }
 
 void BattleManager::log(const string& message) {
