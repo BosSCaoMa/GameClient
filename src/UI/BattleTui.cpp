@@ -9,7 +9,7 @@
 using namespace std;
 
 namespace {
-constexpr int kMinMidWidth = 32;
+constexpr int kMinMidWidth = 48;
 }
 
 BattleTui::BattleTui() = default;
@@ -107,9 +107,63 @@ void BattleTui::layoutWindows()
     screenRows_ = rows;
     screenCols_ = cols;
 
-    int leftWidth = max(28, cols / 5);
-    int rightWidth = max(24, cols / 6);
-    int midWidth = max(kMinMidWidth, cols - leftWidth - rightWidth);
+    const int minLeft = 24;
+    const int minRight = 24;
+    const int minBattlefield = 20;
+
+    int leftWidth = 0;
+    int rightWidth = 0;
+    int midWidth = 0;
+
+    if (cols <= minLeft + minRight + minBattlefield) {
+        leftWidth = max(12, cols / 4);
+        rightWidth = max(12, cols / 4);
+        midWidth = cols - leftWidth - rightWidth;
+        if (midWidth < minBattlefield) {
+            midWidth = max(8, midWidth);
+        }
+    } else {
+        leftWidth = max(minLeft + 6, cols / 5);
+        rightWidth = max(minRight + 2, cols / 6);
+        midWidth = cols - leftWidth - rightWidth;
+
+        if (midWidth < kMinMidWidth) {
+            int need = kMinMidWidth - midWidth;
+            int shrinkLeft = min(need / 2 + need % 2, leftWidth - minLeft);
+            leftWidth -= shrinkLeft;
+            need -= shrinkLeft;
+            int shrinkRight = min(need, rightWidth - minRight);
+            rightWidth -= shrinkRight;
+            need -= shrinkRight;
+            midWidth = cols - leftWidth - rightWidth;
+        }
+    }
+
+    if (midWidth < minBattlefield) {
+        midWidth = max(minBattlefield, cols - (minLeft + minRight));
+        if (midWidth < minBattlefield) {
+            midWidth = minBattlefield;
+        }
+        leftWidth = max(minLeft, (cols - midWidth) / 2);
+        rightWidth = max(minRight, cols - midWidth - leftWidth);
+    }
+
+    if (leftWidth < 1) {
+        leftWidth = 1;
+    }
+    if (rightWidth < 1) {
+        rightWidth = 1;
+    }
+    midWidth = cols - leftWidth - rightWidth;
+    if (midWidth < 1) {
+        midWidth = 1;
+        if (rightWidth > leftWidth) {
+            rightWidth = max(1, cols - leftWidth - midWidth);
+        } else {
+            leftWidth = max(1, cols - rightWidth - midWidth);
+        }
+        midWidth = max(1, cols - leftWidth - rightWidth);
+    }
 
     if (leftWin_) {
         delwin(leftWin_);
@@ -133,13 +187,13 @@ void BattleTui::render()
     }
     layoutWindows();
     if (leftWin_) {
-        renderHealthPane();
+        renderStatusPane();
     }
     if (midWin_) {
-        renderLogPane();
+        renderBattlefieldPane();
     }
     if (rightWin_) {
-        renderStatsPane();
+        renderLogPane();
     }
     if (screenRows_ > 0) {
         move(screenRows_ - 1, 0);
@@ -149,16 +203,44 @@ void BattleTui::render()
     }
 }
 
-void BattleTui::renderHealthPane()
+void BattleTui::renderStatusPane()
 {
     werase(leftWin_);
     box(leftWin_, 0, 0);
-    mvwprintw(leftWin_, 0, 2, "单位状态");
-    int row = 1;
-    if (manager_) {
-        row = drawTeamSection(leftWin_, manager_->getUserTeam(), "我方", row);
-        row = drawTeamSection(leftWin_, manager_->getEnemyTeam(), "敌方", row + 1);
+    mvwprintw(leftWin_, 0, 2, "状态与统计");
+
+    if (!manager_) {
+        mvwprintw(leftWin_, 1, 1, "等待战斗开始...");
+        wrefresh(leftWin_);
+        return;
     }
+
+    int row = 1;
+    const int height = getmaxy(leftWin_);
+    const auto& userTeam = manager_->getUserTeam();
+    const auto& enemyTeam = manager_->getEnemyTeam();
+
+    mvwprintw(leftWin_, row++, 1, "回合: %d/%d", manager_->getRound(), manager_->getMaxRounds());
+    mvwprintw(leftWin_, row++, 1, "状态: %s", formatResult(manager_->getResult()).c_str());
+    row++;
+    mvwprintw(leftWin_, row++, 1, "我方存活: %d/%zu", countAlive(userTeam), userTeam.size());
+    mvwprintw(leftWin_, row++, 1, "敌方存活: %d/%zu", countAlive(enemyTeam), enemyTeam.size());
+    row++;
+    mvwprintw(leftWin_, row++, 1, "我方伤害: %lld", static_cast<long long>(sumTeamDamage(true)));
+    mvwprintw(leftWin_, row++, 1, "敌方伤害: %lld", static_cast<long long>(sumTeamDamage(false)));
+    row += 2;
+
+    if (row < height - 2) {
+        row = drawTeamSection(leftWin_, userTeam, "我方", row);
+    }
+    if (row < height - 2) {
+        row = drawTeamSection(leftWin_, enemyTeam, "敌方", row + 1);
+    }
+
+    if (height - 2 > row) {
+        mvwprintw(leftWin_, height - 2, 1, "Tip: q 返回主菜单");
+    }
+
     wrefresh(leftWin_);
 }
 
@@ -212,18 +294,202 @@ int BattleTui::drawTeamSection(WINDOW* win, const vector<BattleCharacter>& team,
     return startRow;
 }
 
-void BattleTui::renderLogPane()
+void BattleTui::renderBattlefieldPane()
 {
     werase(midWin_);
     box(midWin_, 0, 0);
-    mvwprintw(midWin_, 0, 2, "战斗日志");
+    mvwprintw(midWin_, 0, 2, "战斗场景");
+    if (!manager_) {
+        mvwprintw(midWin_, 1, 2, "暂无战斗数据");
+        wrefresh(midWin_);
+        return;
+    }
+
     int height = 0;
     int width = 0;
     getmaxyx(midWin_, height, width);
+    const int innerHeight = height - 2;
+    const int innerWidth = width - 2;
+    if (innerHeight <= 0 || innerWidth <= 0) {
+        wrefresh(midWin_);
+        return;
+    }
+
+    struct FormationRows {
+        vector<const BattleCharacter*> front;
+        vector<const BattleCharacter*> back;
+    };
+
+    auto splitTeam = [](const vector<BattleCharacter>& team) {
+        FormationRows rows;
+        rows.front.reserve(team.size());
+        rows.back.reserve(team.size());
+        for (const auto& ch : team) {
+            if (ch.isInFrontRow()) {
+                rows.front.push_back(&ch);
+            } else {
+                rows.back.push_back(&ch);
+            }
+        }
+        return rows;
+    };
+
+    const auto friendlyRows = splitTeam(manager_->getUserTeam());
+    const auto enemyRows = splitTeam(manager_->getEnemyTeam());
+
+    const int gap = max(2, innerWidth / 20);
+    int friendlyWidth = max(20, (innerWidth - gap) / 2);
+    int enemyWidth = innerWidth - gap - friendlyWidth;
+    if (enemyWidth < 20) {
+        enemyWidth = max(12, enemyWidth);
+        friendlyWidth = innerWidth - gap - enemyWidth;
+    }
+    if (friendlyWidth < 12) {
+        friendlyWidth = max(12, friendlyWidth);
+        enemyWidth = innerWidth - gap - friendlyWidth;
+    }
+    const int friendlyOrigin = 1;
+    const int friendlyEnd = friendlyOrigin + friendlyWidth - 1;
+    const int enemyOrigin = friendlyEnd + gap;
+    int enemyWidthAdjusted = enemyWidth;
+    if (enemyOrigin > innerWidth) {
+        enemyWidthAdjusted = 0;
+    } else if (enemyOrigin + enemyWidth - 1 > innerWidth) {
+        enemyWidthAdjusted = innerWidth - enemyOrigin + 1;
+    }
+    const int enemyEnd = enemyOrigin + max(0, enemyWidthAdjusted) - 1;
+    const int dividerCol = min(innerWidth, friendlyEnd + gap / 2);
+    for (int y = 1; y <= innerHeight; ++y) {
+        if (dividerCol > 0 && dividerCol < width - 1) {
+            mvwaddch(midWin_, y, dividerCol, ACS_VLINE);
+        }
+    }
+
+    const int spriteHeight = 3;
+    constexpr double kMaxDisplayRage = 100.0;
+
+    auto makeBar = [](double ratio, int barWidth, char fillChar) {
+        barWidth = max(4, barWidth);
+        ratio = clamp(ratio, 0.0, 1.0);
+        int filled = static_cast<int>(ratio * static_cast<double>(barWidth) + 0.5);
+        string bar(barWidth, ' ');
+        for (int i = 0; i < filled && i < barWidth; ++i) {
+            bar[i] = fillChar;
+        }
+        return string("[") + bar + "]";
+    };
+
+    auto drawCharacterSprite = [&](const BattleCharacter& ch, int top, int left, int slotWidth, bool friendly) {
+        if (slotWidth <= 4 || top >= height - 1) {
+            return;
+        }
+        const int maxWidth = max(8, slotWidth - 1);
+        auto trim = [&](string& line) {
+            if (static_cast<int>(line.size()) > maxWidth) {
+                line.resize(maxWidth);
+            }
+        };
+
+        double hpRatio = 0.0;
+        if (ch.currentAttr.maxHp > 0) {
+            hpRatio = static_cast<double>(max<int64_t>(0, ch.currentAttr.hp)) /
+                static_cast<double>(ch.currentAttr.maxHp);
+        }
+        string hpLine = "HP " + makeBar(hpRatio, max(4, maxWidth - 6), '#');
+        trim(hpLine);
+
+        string marker = friendly ? ">> " : "<< ";
+        string statusTag;
+        if (!ch.isAlive) {
+            statusTag = "阵亡";
+        } else if (ch.hasActed) {
+            statusTag = "已动";
+        } else {
+            statusTag = "待命";
+        }
+        string nameLine = marker + ch.name + " (" + to_string(ch.battleId) + ") " + statusTag;
+        trim(nameLine);
+
+        double rageValue = static_cast<double>(max(0, static_cast<int>(ch.currentAttr.rage)));
+        double rageRatio = clamp(rageValue / kMaxDisplayRage, 0.0, 1.0);
+        string rageLine = "怒 " + makeBar(rageRatio, max(4, maxWidth - 10), '=');
+        ostringstream extra;
+        extra << " " << static_cast<int>(rageValue) << " 盾:" << ch.shieldValue;
+        rageLine += extra.str();
+        trim(rageLine);
+
+        int baseY = min(top, height - 1 - spriteHeight);
+        mvwprintw(midWin_, baseY, left, "%s", hpLine.c_str());
+        mvwprintw(midWin_, baseY + 1, left, "%s", nameLine.c_str());
+        mvwprintw(midWin_, baseY + 2, left, "%s", rageLine.c_str());
+    };
+
+    auto drawRow = [&](const vector<const BattleCharacter*>& units, int topRow, int originX,
+                        int widthAvail, bool friendly) {
+        if (units.empty() || widthAvail <= 0 || topRow >= height - 1) {
+            return;
+        }
+        int slots = static_cast<int>(units.size());
+        int slotWidth = widthAvail / max(1, slots);
+        if (slotWidth * slots > widthAvail) {
+            slotWidth = widthAvail / max(1, slots);
+        }
+        if (slotWidth < 8) {
+            slotWidth = max(8, widthAvail / max(1, slots));
+        }
+        if (slotWidth * slots > widthAvail) {
+            slotWidth = max(8, widthAvail / max(1, slots));
+        }
+        if (slotWidth <= 0) {
+            slotWidth = widthAvail / max(1, slots);
+        }
+        if (slotWidth <= 0) {
+            slotWidth = widthAvail;
+        }
+        int totalWidth = slotWidth * slots;
+        int offset = originX + max(0, (widthAvail - totalWidth) / 2);
+        for (int i = 0; i < slots; ++i) {
+            int column = offset + i * slotWidth;
+            if (column >= originX + widthAvail) {
+                break;
+            }
+            drawCharacterSprite(*units[i], topRow, column, slotWidth, friendly);
+        }
+    };
+
+    int friendlyAreaWidth = max(0, friendlyEnd - friendlyOrigin + 1);
+    int enemyAreaWidth = max(0, enemyEnd - enemyOrigin + 1);
+    int frontRowTop = 1;
+    int backRowTop = min(innerHeight - spriteHeight, frontRowTop + spriteHeight + 1);
+
+    drawRow(friendlyRows.front, frontRowTop, friendlyOrigin, friendlyAreaWidth, true);
+    drawRow(friendlyRows.back, backRowTop, friendlyOrigin, friendlyAreaWidth, true);
+
+    if (enemyWidthAdjusted > 0) {
+        drawRow(enemyRows.front, frontRowTop, enemyOrigin, enemyAreaWidth, false);
+        drawRow(enemyRows.back, backRowTop, enemyOrigin, enemyAreaWidth, false);
+    }
+
+    int infoRow = min(innerHeight, backRowTop + spriteHeight + 1);
+    if (infoRow < height - 1) {
+        mvwprintw(midWin_, infoRow, 2, "队伍分列左右，血条/怒气实时刷新");
+    }
+
+    wrefresh(midWin_);
+}
+
+void BattleTui::renderLogPane()
+{
+    werase(rightWin_);
+    box(rightWin_, 0, 0);
+    mvwprintw(rightWin_, 0, 2, "战斗日志");
+    int height = 0;
+    int width = 0;
+    getmaxyx(rightWin_, height, width);
     int innerHeight = height - 2;
     int innerWidth = width - 2;
     if (innerHeight <= 0 || innerWidth <= 0) {
-        wrefresh(midWin_);
+        wrefresh(rightWin_);
         return;
     }
     int start = static_cast<int>(logLines_.size()) - innerHeight;
@@ -236,38 +502,11 @@ void BattleTui::renderLogPane()
         if (static_cast<int>(line.size()) > innerWidth) {
             line.resize(innerWidth);
         }
-        mvwprintw(midWin_, row++, 1, "%s", line.c_str());
+        mvwprintw(rightWin_, row++, 1, "%s", line.c_str());
         if (row > innerHeight) {
             break;
         }
     }
-    wrefresh(midWin_);
-}
-
-void BattleTui::renderStatsPane()
-{
-    werase(rightWin_);
-    box(rightWin_, 0, 0);
-    mvwprintw(rightWin_, 0, 2, "统计");
-    if (!manager_) {
-        wrefresh(rightWin_);
-        return;
-    }
-    int row = 1;
-    mvwprintw(rightWin_, row++, 1, "回合: %d/%d", manager_->getRound(), manager_->getMaxRounds());
-    mvwprintw(rightWin_, row++, 1, "状态: %s", formatResult(manager_->getResult()).c_str());
-    row++;
-
-    const auto& userTeam = manager_->getUserTeam();
-    const auto& enemyTeam = manager_->getEnemyTeam();
-    mvwprintw(rightWin_, row++, 1, "我方存活: %d/%zu", countAlive(userTeam), userTeam.size());
-    mvwprintw(rightWin_, row++, 1, "敌方存活: %d/%zu", countAlive(enemyTeam), enemyTeam.size());
-    mvwprintw(rightWin_, row++, 1, "我方伤害: %lld", static_cast<long long>(sumTeamDamage(true)));
-    mvwprintw(rightWin_, row++, 1, "敌方伤害: %lld", static_cast<long long>(sumTeamDamage(false)));
-    row++;
-    mvwprintw(rightWin_, row++, 1, "日志行数: %zu", logLines_.size());
-    row++;
-    mvwprintw(rightWin_, row++, 1, "Tip: 战斗结束后按 q 退出");
     wrefresh(rightWin_);
 }
 

@@ -31,9 +31,9 @@ private:
     void shutdownCurses();
     void layoutWindows();
     void render();
-    void renderHealthPane();
+    void renderStatusPane();
+    void renderBattlefieldPane();
     void renderLogPane();
-    void renderStatsPane();
     int drawTeamSection(WINDOW* win, const std::vector<BattleCharacter>& team,
         const std::string& label, int startRow);
     static int countAlive(const std::vector<BattleCharacter>& team);
